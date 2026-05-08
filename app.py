@@ -131,9 +131,12 @@ st.image(
 )
 st.title("Analisis Intertemporal Sumber Daya Emas")
 st.markdown("""
-### Disusun oleh:
+Disusun oleh:
+
 Salsa Zahratul Aulia (10090224004)
+
 Aida Frida Kultsum (10090224014)
+
 Nabil Athala Naufal (10090224022)
 
 Mata Kuliah:
