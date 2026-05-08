@@ -128,36 +128,60 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 
 st.markdown("""
 <style>
-.main-title {
-    font-size: 42px;
-    font-weight: 700;
+
+.big-title {
+    font-size: 58px;
+    font-weight: 800;
     color: white;
-    margin-bottom: 5px;
+    line-height: 1.1;
+    margin-bottom: 15px;
 }
 
-.sub-text {
-    font-size: 18px;
+.subtitle-text {
+    font-size: 20px;
     color: #D3D3D3;
+    margin-bottom: 20px;
 }
 
 .identity-box {
-    background-color: rgba(255,255,255,0.03);
-    padding: 20px;
-    border-radius: 12px;
+    background-color: rgba(255,255,255,0.04);
+    padding: 25px;
+    border-radius: 15px;
     border: 1px solid rgba(255,255,255,0.08);
+    margin-top: 10px;
 }
+
+.identity-box p {
+    font-size: 18px;
+    line-height: 1.8;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([1, 5])
+col1, col2 = st.columns([1.2, 5])
 
 with col1:
-    st.image("Logo.png", width=140)
+    st.image("Logo Unisbaa.png", width=180)
 
 with col2:
 
     st.markdown(
-        '<p class="main-title">Analisis Intertemporal Sumber Daya Emas</p>',
+        """
+        <div class="big-title">
+        Analisis Intertemporal <br>
+        Sumber Daya Emas
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="subtitle-text">
+        PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -181,15 +205,11 @@ YUHKA SUNDAYA, S.E., M.Si.
 </div>
 """, unsafe_allow_html=True)
 
-st.caption(
-    "PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling Rule, Green Paradox, dan Struktur Pasar"
-)
-
 st.info("""
 Dashboard ini menggabungkan data historis, kondisi pasar saat ini,
-simulasi Hotelling murni, Green Paradox, spektrum cadangan,
-serta mekanisme struktur pasar untuk menjelaskan alokasi intertemporal
-sumber daya emas sebagai depletable resource.
+simulasi Hotelling Rule, Green Paradox, spektrum cadangan,
+serta mekanisme struktur pasar untuk menjelaskan
+alokasi intertemporal sumber daya emas sebagai depletable resource.
 """)
 
 # -----------------------------
