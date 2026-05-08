@@ -521,6 +521,86 @@ Ketika kebijakan hijau diumumkan, produsen dapat mempercepat ekstraksi sebelum r
 Itulah efek Green Paradox: aturan yang dimaksudkan mengendalikan emisi justru memicu percepatan
 ekstraksi di awal.
 """)
+# -----------------------------
+# IDENTIFIKASI DISTORSI PASAR
+# -----------------------------
+
+st.markdown("#### Identifikasi Distorsi Pasar")
+
+st.write("""
+Harga pasar sumber daya alam sering kali belum memasukkan
+biaya sosial lingkungan seperti kerusakan lahan,
+pencemaran, dan degradasi lingkungan.
+
+Akibatnya, harga pasar menjadi lebih murah dibandingkan
+biaya sosial sebenarnya (social cost).
+Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
+""")
+
+# INPUT BIAYA SOSIAL
+social_cost = st.slider(
+    "Estimasi biaya sosial lingkungan",
+    0.0,
+    1500.0,
+    400.0,
+    10.0
+)
+
+# PERHITUNGAN
+social_price = mc_value + social_cost
+distortion_gap = social_price - mc_value
+
+# TABEL
+distortion_df = pd.DataFrame({
+    "Komponen": [
+        "Marginal Cost (MC)",
+        "Biaya Sosial",
+        "Total Social Cost"
+    ],
+    "Nilai": [
+        mc_value,
+        social_cost,
+        social_price
+    ]
+})
+
+st.dataframe(distortion_df, use_container_width=True)
+
+# GRAFIK
+fig_dist, ax_dist = plt.subplots()
+
+kategori = [
+    "MC",
+    "Biaya Sosial",
+    "Social Cost"
+]
+
+nilai = [
+    mc_value,
+    social_cost,
+    social_price
+]
+
+ax_dist.bar(kategori, nilai)
+
+ax_dist.set_ylabel("Biaya")
+
+st.pyplot(fig_dist)
+
+# INTERPRETASI
+st.write(f"""
+Simulasi menunjukkan bahwa biaya ekstraksi langsung (MC)
+sebesar {fmt_idr(mc_value)} belum mencerminkan
+seluruh biaya lingkungan.
+
+Ketika biaya sosial dimasukkan,
+total social cost meningkat menjadi
+{fmt_idr(social_price)}.
+
+Hal ini menunjukkan adanya distorsi pasar
+karena harga pasar belum sepenuhnya
+menginternalisasi dampak lingkungan.
+""")
 
 st.download_button(
     "Download Tabel Green Paradox CSV",
