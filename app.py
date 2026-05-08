@@ -135,7 +135,11 @@ with col1:
     st.markdown("## 🟡")
 
 with col2:
-    st.title("Analisis Intertemporal Sumber Daya Emas")
+    # LOGO UNISBA
+st.image("logo_unisba.png", width=120)
+
+# JUDUL
+st.title("Analisis Intertemporal Sumber Daya Emas")
 
     st.markdown("""
     **Kelompok 4**
