@@ -123,14 +123,40 @@ current_status = "Reserve makin layak" if market_price_now >= mc_value else "Mas
 market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 else "Mixed / transisi"
 
 # -----------------------------
-# Title and quick intro
+# HEADER / COVER
 # -----------------------------
-st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
 
-st.write("""
-Dashboard ini menggabungkan data historis, kondisi pasar saat ini, simulasi Hotelling murni,
-simulasi Green Paradox, spektrum cadangan, dan mekanisme struktur pasar untuk menjelaskan
-alokasi intertemporal sumber daya depletable.
+col_logo, col_title = st.columns([1, 5])
+
+with col_logo:
+    st.image("output-onlinepngtools.png", width=120)
+
+with col_title:
+
+    st.title("Analisis Intertemporal Sumber Daya Emas")
+
+    st.markdown("""
+    ### Kelompok 4
+
+    **Salsa Zahratul Aulia** *(10090224004)*  
+    **Aida Frida Kultsum** *(10090224014)*  
+    **Nabil Athala Naufal** *(10090224022)*
+
+    **Mata Kuliah:** Ekonomi Sumber Daya Alam dan Lingkungan  
+
+    **Dosen Pengampu:**  
+    YUHKA SUNDAYA, S.E., M.Si.
+    """)
+
+st.caption(
+    "PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling Rule, Green Paradox, dan Struktur Pasar"
+)
+
+st.info("""
+Dashboard ini menggabungkan data historis, kondisi pasar saat ini,
+simulasi Hotelling murni, Green Paradox, spektrum cadangan,
+serta mekanisme struktur pasar untuk menjelaskan alokasi intertemporal
+sumber daya emas sebagai depletable resource.
 """)
 
 # -----------------------------
