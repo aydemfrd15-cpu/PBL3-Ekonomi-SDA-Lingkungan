@@ -125,27 +125,30 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 # -----------------------------
 # Title and quick intro
 # -----------------------------
-st.image(
-    "https://upload.wikimedia.org/wikipedia/id/5/56/Logo_Unisba.png",
-    width=120
-)
-st.title("Analisis Intertemporal Sumber Daya Emas")
-st.markdown("""
-Disusun oleh:
+# =====================================
+# HEADER
+# =====================================
 
-Salsa Zahratul Aulia (10090224004)
+col1, col2 = st.columns([1, 5])
 
-Aida Frida Kultsum (10090224014)
+with col1:
+    st.markdown("## 🟡")
 
-Nabil Athala Naufal (10090224022)
+with col2:
+    st.title("Analisis Intertemporal Sumber Daya Emas")
 
-Mata Kuliah:
-**Ekonomi Sumber Daya Alam dan Lingkungan**
+    st.markdown("""
+    **Kelompok 4**
 
-Dosen Pengampu:
-**Yuhka Sundaya, S.E., M.Si.**
-""")
+    Salsa Zahratul Aulia (10090224004)  
+    Aida Frida Kultsum (10090224014)  
+    Nabil Athala Naufal (10090224022)
 
+    **Mata Kuliah:** Ekonomi Sumber Daya Alam dan Lingkungan
+
+    **Dosen Pengampu:**  
+    YUHKA SUNDAYA, S.E., M.SI.
+    """)
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
 
 st.write("""
