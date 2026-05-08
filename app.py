@@ -8,6 +8,13 @@ st.set_page_config(
     layout="wide",
 )
 
+st.markdown("""
+**Kelompok 4**  
+Salsa Zahratul Aulia (10090224004)  
+Aida Frida Kultsum (10090224014)  
+Nabil Athala Naufal (10090224022)
+""")
+
 # -----------------------------
 # Helper functions
 # -----------------------------
