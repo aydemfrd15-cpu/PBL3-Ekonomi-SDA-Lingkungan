@@ -8,13 +8,6 @@ st.set_page_config(
     layout="wide",
 )
 
-st.markdown("""
-**Kelompok 4**  
-Salsa Zahratul Aulia (10090224004)  
-Aida Frida Kultsum (10090224014)  
-Nabil Athala Naufal (10090224022)
-""")
-
 # -----------------------------
 # Helper functions
 # -----------------------------
@@ -133,6 +126,12 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 # Title and quick intro
 # -----------------------------
 st.title("Analisis Intertemporal Sumber Daya Emas")
+st.markdown("""
+**Kelompok 4**  
+Salsa Zahratul Aulia (10090224004)  
+Aida Frida Kultsum (10090224014)  
+Nabil Athala Naufal (10090224022)
+""")
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
 
 st.write("""
