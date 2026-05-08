@@ -135,10 +135,6 @@ with col1:
     st.markdown("## 🟡")
 
 with col2:
-    # LOGO UNISBA
-st.image("logo_unisba.png", width=120)
-
-# JUDUL
 st.title("Analisis Intertemporal Sumber Daya Emas")
 
     st.markdown("""
