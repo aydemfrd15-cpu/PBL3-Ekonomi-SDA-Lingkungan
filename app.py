@@ -125,13 +125,24 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 # -----------------------------
 # Title and quick intro
 # -----------------------------
+st.image(
+    "https://upload.wikimedia.org/wikipedia/id/5/56/Logo_Unisba.png",
+    width=120
+)
 st.title("Analisis Intertemporal Sumber Daya Emas")
 st.markdown("""
-**Kelompok 4**  
-Salsa Zahratul Aulia (10090224004)  
-Aida Farida Kultsum (10090224014)  
-Nabil Athala Naufal (10090224022)
+### Informasi Pengembang
+Dikembangkan oleh:
+- Salsa Zahratul Aulia (10090224004)
+- Aida Frida Kultsum (10090224014)
+- Nabil Athala Naufal (10090224022)
+Pada Mata Kuliah:
+**Ekonomi Sumber Daya Alam dan Lingkungan**
+
+Di bawah bimbingan:
+**YUHKA SUNDAYA, S.E., M.SI.**
 """)
+
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
 
 st.write("""
