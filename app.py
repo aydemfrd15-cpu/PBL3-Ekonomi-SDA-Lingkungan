@@ -532,118 +532,157 @@ st.download_button(
 # -----------------------------
 # MEKANISME STRUKTUR PASAR
 # -----------------------------
-st.markdown("### 4.4 Mekanisme Pasar: Persaingan, Monopoli, dan Oligopoli")
-
-st.write("""
-Tiga mekanisme pasar ini digunakan untuk melihat bagaimana struktur pasar
-mempengaruhi harga, output, dan evaluasi efisiensi Hotelling.
-""")
-
-# Hitungan sederhana berbasis parameter permintaan
-q_comp = max((a - mc_value) / b, 0)
-p_comp = mc_value if q_comp > 0 else a
-
-q_mono = max((a - mc_value) / (2 * b), 0)
-p_mono = a - b * q_mono
-
-q_oligo = max((oligopoly_firms / (oligopoly_firms + 1)) * ((a - mc_value) / b), 0)
-p_oligo = a - b * q_oligo
-
-market_table = pd.DataFrame({
-    "Mekanisme Pasar": ["Persaingan Sempurna", "Monopoli", "Oligopoli (Cournot)"],
-    "Harga": [p_comp, p_mono, p_oligo],
-    "Produksi": [q_comp, q_mono, q_oligo],
-    "Markup atas MC": [p_comp - mc_value, p_mono - mc_value, p_oligo - mc_value]
-})
-
-market_table["Evaluasi Hotelling"] = [
-    "Harga paling dekat MC; sinyal kelangkaan paling lemah",
-    "Harga tertinggi; kontrol pasar paling besar",
-    "Berada di tengah antara persaingan dan monopoli"
-]
-
-mcol1, mcol2 = st.columns(2)
-with mcol1:
-    st.dataframe(market_table, use_container_width=True)
-with mcol2:
-    fig_mkt, ax_mkt = plt.subplots()
-    ax_mkt.bar(market_table["Mekanisme Pasar"], market_table["Harga"])
-    ax_mkt.set_ylabel("Harga")
-    ax_mkt.tick_params(axis="x", rotation=20)
-    st.pyplot(fig_mkt)
-
-st.write("""
-Pada pasar persaingan sempurna, harga paling dekat dengan biaya ekstraksi.
-Pada monopoli, harga jauh lebih tinggi karena kekuatan pasar besar.
-Pada oligopoli, hasilnya berada di antara keduanya.
-Struktur ini penting untuk mengevaluasi apakah jalur harga mendekati efisiensi Hotelling
-atau justru menyimpang karena kekuatan pasar.
-""")
-
-# 4.4 Market structure
 st.markdown("### 4.4 Mekanisme Struktur Pasar dan Evaluasi Hotelling")
+
 st.write("""
-Bagian ini membandingkan tiga mekanisme pasar: persaingan sempurna, monopoli, dan oligopoli.
-Perhitungan menggunakan parameter permintaan dari praktikum sebelumnya: P = 2977,841 - 0,788Q.
+Bagian ini mensimulasikan bagaimana jumlah perusahaan memengaruhi harga,
+jumlah produksi, market power, dan efisiensi intertemporal sumber daya emas.
+
+Jika:
+- jumlah perusahaan = 1 → monopoli
+- jumlah perusahaan = 2 → duopoli
+- jumlah perusahaan ≥ 3 → oligopoli
+
+Semakin sedikit jumlah perusahaan, semakin besar kekuatan pasar (market power)
+dan semakin besar peluang penyimpangan dari efisiensi Hotelling.
 """)
 
-# Static equilibrium for three market structures
-q_comp = max((a - mc_value) / b, 0)
-p_comp = mc_value if q_comp > 0 else a
+# -----------------------------
+# INPUT STRUKTUR PASAR
+# -----------------------------
+jumlah_perusahaan = st.slider(
+    "Jumlah perusahaan dalam pasar",
+    1,
+    10,
+    3,
+    1
+)
 
-q_mono = max((a - mc_value) / (2 * b), 0)
-p_mono = a - b * q_mono
+# -----------------------------
+# PENENTUAN STRUKTUR PASAR
+# -----------------------------
+if jumlah_perusahaan == 1:
+    struktur_pasar = "Monopoli"
 
-q_oligo = max((oligopoly_firms / (oligopoly_firms + 1)) * ((a - mc_value) / b), 0)
-p_oligo = a - b * q_oligo
+elif jumlah_perusahaan == 2:
+    struktur_pasar = "Duopoli"
 
-market_df = pd.DataFrame({
-    "Mekanisme Pasar": ["Persaingan Sempurna", "Monopoli", "Oligopoli (Cournot)"],
-    "Harga": [p_comp, p_mono, p_oligo],
-    "Jumlah Produksi": [q_comp, q_mono, q_oligo],
-    "Markup atas MC": [p_comp - mc_value, p_mono - mc_value, p_oligo - mc_value],
+else:
+    struktur_pasar = "Oligopoli"
+
+# -----------------------------
+# RUMUS COURNOT
+# -----------------------------
+Q_market = (
+    (jumlah_perusahaan * (a - mc_value))
+    / (b * (jumlah_perusahaan + 1))
+)
+
+P_market = a - (b * Q_market)
+
+markup = P_market - mc_value
+
+produksi_perusahaan = Q_market / jumlah_perusahaan
+
+# -----------------------------
+# TABEL HASIL
+# -----------------------------
+market_result = pd.DataFrame({
+    "Struktur Pasar": [struktur_pasar],
+    "Jumlah Perusahaan": [jumlah_perusahaan],
+    "Harga Pasar": [P_market],
+    "Total Produksi": [Q_market],
+    "Produksi per Perusahaan": [produksi_perusahaan],
+    "Markup terhadap MC": [markup]
 })
-market_df["Interpretasi Hotelling"] = [
-    "Harga dekat MC; sinyal kelangkaan paling lemah",
-    "Markup tinggi; ekstraksi cenderung lebih tertahan",
-    "Di antara persaingan dan monopoli"
+
+st.dataframe(market_result, use_container_width=True)
+
+# -----------------------------
+# GRAFIK
+# -----------------------------
+fig_market, ax_market = plt.subplots()
+
+kategori = [
+    "Harga",
+    "Total Produksi",
+    "Markup"
 ]
 
-m1, m2 = st.columns(2)
-with m1:
-    st.dataframe(market_df, use_container_width=True)
-with m2:
-    fig_mkt, ax_mkt = plt.subplots()
-    model_names = market_df["Mekanisme Pasar"].tolist()
-    prices = market_df["Harga"].tolist()
-    ax_mkt.bar(model_names, prices)
-    ax_mkt.set_ylabel("Harga")
-    ax_mkt.tick_params(axis="x", rotation=20)
-    st.pyplot(fig_mkt)
+nilai = [
+    P_market,
+    Q_market,
+    markup
+]
 
-st.write("""
-Evaluasi Hotelling di sini dibaca sebagai berikut: semakin kuat market power,
-semakin besar markup terhadap biaya ekstraksi dan semakin besar peluang penyimpangan
-dari jalur harga efisien. Persaingan sempurna paling dekat dengan sinyal biaya,
-sedangkan monopoli paling jauh dari kondisi efisien karena harga dibentuk oleh kekuatan pasar.
+ax_market.bar(kategori, nilai)
+
+ax_market.set_title(
+    f"Simulasi Struktur Pasar: {struktur_pasar}"
+)
+
+st.pyplot(fig_market)
+
+# -----------------------------
+# INTERPRETASI EKONOMI
+# -----------------------------
+st.write(f"""
+Hasil simulasi menunjukkan bahwa struktur pasar saat ini termasuk
+**{struktur_pasar}** dengan jumlah perusahaan sebanyak
+**{jumlah_perusahaan} perusahaan**.
+
+Harga pasar hasil simulasi sebesar
+**{fmt_idr(P_market)}** dengan total produksi sebesar
+**{fmt_num(Q_market)}**.
+
+Nilai markup terhadap marginal cost sebesar
+**{fmt_idr(markup)}** menunjukkan adanya market power
+dalam pembentukan harga.
+
+Semakin sedikit jumlah perusahaan, maka:
+- harga cenderung lebih tinggi,
+- produksi cenderung lebih rendah,
+- dan penyimpangan dari efisiensi Hotelling semakin besar.
+
+Sebaliknya, ketika jumlah perusahaan meningkat,
+struktur pasar bergerak mendekati persaingan sempurna,
+sehingga harga semakin dekat dengan biaya ekstraksi.
 """)
 
-market_eval = pd.DataFrame({
-    "Model": ["Persaingan", "Monopoli", "Oligopoli"],
-    "Harga": [p_comp, p_mono, p_oligo],
-    "Selisih dari MC": [p_comp - mc_value, p_mono - mc_value, p_oligo - mc_value],
-    "Kesesuaian Hotelling": [
-        "Relatif lemah",
-        "Rent tinggi / deviasi kuat",
-        "Sedang"
-    ]
-})
-st.dataframe(market_eval, use_container_width=True)
+# -----------------------------
+# EVALUASI HOTELLING
+# -----------------------------
+st.markdown("#### Evaluasi Efisiensi Hotelling")
 
+if markup > 500:
+    evaluasi_hotelling = """
+    Struktur pasar menunjukkan market power yang cukup kuat.
+    Harga jauh di atas biaya ekstraksi sehingga jalur harga
+    berpotensi menyimpang dari efisiensi Hotelling.
+    """
+
+elif markup > 100:
+    evaluasi_hotelling = """
+    Struktur pasar menunjukkan market power sedang.
+    Jalur harga masih mengandung deviasi terhadap kondisi efisiensi.
+    """
+
+else:
+    evaluasi_hotelling = """
+    Struktur pasar relatif mendekati persaingan sempurna.
+    Harga semakin dekat dengan biaya ekstraksi sehingga
+    lebih mendekati kondisi efisiensi Hotelling.
+    """
+
+st.info(evaluasi_hotelling)
+
+# -----------------------------
+# DOWNLOAD CSV
+# -----------------------------
 st.download_button(
-    "Download Tabel Struktur Pasar CSV",
-    data=market_df.to_csv(index=False).encode("utf-8"),
-    file_name="struktur_pasar_emas.csv",
+    "Download Struktur Pasar CSV",
+    data=market_result.to_csv(index=False).encode("utf-8"),
+    file_name="simulasi_struktur_pasar.csv",
     mime="text/csv",
 )
 
