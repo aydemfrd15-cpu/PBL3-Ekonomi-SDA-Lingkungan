@@ -126,27 +126,60 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 # HEADER / COVER
 # -----------------------------
 
-col_logo, col_title = st.columns([1, 5])
+st.markdown("""
+<style>
+.main-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 5px;
+}
 
-with col_logo:
-    st.image("output-onlinepngtools.png", width=120)
+.sub-text {
+    font-size: 18px;
+    color: #D3D3D3;
+}
 
-with col_title:
+.identity-box {
+    background-color: rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+</style>
+""", unsafe_allow_html=True)
 
-    st.title("Analisis Intertemporal Sumber Daya Emas")
+col1, col2 = st.columns([1, 5])
+
+with col1:
+    st.image("Logo.png", width=140)
+
+with col2:
+
+    st.markdown(
+        '<p class="main-title">Analisis Intertemporal Sumber Daya Emas</p>',
+        unsafe_allow_html=True
+    )
 
     st.markdown("""
-    ### Kelompok 4
+<div class="identity-box">
 
-    **Salsa Zahratul Aulia** *(10090224004)*  
-    **Aida Frida Kultsum** *(10090224014)*  
-    **Nabil Athala Naufal** *(10090224022)*
+### Kelompok 4
 
-    **Mata Kuliah:** Ekonomi Sumber Daya Alam dan Lingkungan  
+**Salsa Zahratul Aulia** *(10090224004)*  
+**Aida Frida Kultsum** *(10090224014)*  
+**Nabil Athala Naufal** *(10090224022)*  
 
-    **Dosen Pengampu:**  
-    YUHKA SUNDAYA, S.E., M.Si.
-    """)
+---
+
+**Mata Kuliah:**  
+Ekonomi Sumber Daya Alam dan Lingkungan  
+
+**Dosen Pengampu:**  
+YUHKA SUNDAYA, S.E., M.Si.
+
+</div>
+""", unsafe_allow_html=True)
 
 st.caption(
     "PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling Rule, Green Paradox, dan Struktur Pasar"
