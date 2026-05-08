@@ -129,7 +129,7 @@ st.title("Analisis Intertemporal Sumber Daya Emas")
 st.markdown("""
 **Kelompok 4**  
 Salsa Zahratul Aulia (10090224004)  
-Aida Frida Kultsum (10090224014)  
+Aida Farida Kultsum (10090224014)  
 Nabil Athala Naufal (10090224022)
 """)
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
