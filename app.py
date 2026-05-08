@@ -131,16 +131,16 @@ st.image(
 )
 st.title("Analisis Intertemporal Sumber Daya Emas")
 st.markdown("""
-### Informasi Pengembang
-Dikembangkan oleh:
-- Salsa Zahratul Aulia (10090224004)
-- Aida Frida Kultsum (10090224014)
-- Nabil Athala Naufal (10090224022)
-Pada Mata Kuliah:
+### Disusun oleh:
+Salsa Zahratul Aulia (10090224004)
+Aida Frida Kultsum (10090224014)
+Nabil Athala Naufal (10090224022)
+
+Mata Kuliah:
 **Ekonomi Sumber Daya Alam dan Lingkungan**
 
-Di bawah bimbingan:
-**YUHKA SUNDAYA, S.E., M.SI.**
+Dosen Pengampu:
+**Yuhka Sundaya, S.E., M.Si.**
 """)
 
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
