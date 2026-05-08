@@ -528,13 +528,8 @@ ekstraksi di awal.
 st.markdown("#### Identifikasi Distorsi Pasar")
 
 st.write("""
-Harga pasar sumber daya alam sering kali belum memasukkan
-biaya sosial lingkungan seperti kerusakan lahan,
-pencemaran, dan degradasi lingkungan.
-
-Akibatnya, harga pasar menjadi lebih murah dibandingkan
-biaya sosial sebenarnya (social cost).
-Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
+Harga pasar sumber daya alam sering kali belum memasukkan biaya sosial lingkungan seperti kerusakan lahan, pencemaran, dan degradasi lingkungan. Akibatnya, harga pasar menjadi lebih murah dibandingkan
+biaya sosial sebenarnya (social cost). Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
 """)
 
 # INPUT BIAYA SOSIAL
