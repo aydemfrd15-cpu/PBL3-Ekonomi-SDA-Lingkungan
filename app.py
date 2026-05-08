@@ -125,30 +125,6 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 # -----------------------------
 # Title and quick intro
 # -----------------------------
-# =====================================
-# HEADER
-# =====================================
-
-col1, col2 = st.columns([1, 5])
-
-with col1:
-    st.markdown("## 🟡")
-
-with col2:
-st.title("Analisis Intertemporal Sumber Daya Emas")
-
-    st.markdown("""
-    **Kelompok 4**
-
-    Salsa Zahratul Aulia (10090224004)  
-    Aida Frida Kultsum (10090224014)  
-    Nabil Athala Naufal (10090224022)
-
-    **Mata Kuliah:** Ekonomi Sumber Daya Alam dan Lingkungan
-
-    **Dosen Pengampu:**  
-    YUHKA SUNDAYA, S.E., M.SI.
-    """)
 st.caption("PBL 3 - Depletable Resource Allocation | Dashboard simulasi harga, cadangan, Hotelling, dan Green Paradox")
 
 st.write("""
