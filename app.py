@@ -263,31 +263,20 @@ st.subheader("BAB I. Pendahuluan")
 st.markdown("### 1.1 Latar Belakang")
 
 st.write("""
-Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan 
-(depletable resources) yang memiliki nilai ekonomi tinggi dalam sistem 
-perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
-sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna 
-yang diberikan manusia terhadap komoditas tersebut.
-
-Menurut perspektif The Sense of Beauty yang dikemukakan oleh George Santayana, 
-nilai muncul akibat preferensi dan kebutuhan manusia terhadap suatu objek. 
-Dalam konteks ekonomi modern, emas dipandang sebagai aset yang mampu menjaga 
-kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (hedging asset), 
-serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
-
-Persepsi ini menyebabkan permintaan terhadap emas tetap tinggi dan membentuk 
-ekspektasi bahwa emas akan terus memiliki nilai ekonomi di masa depan.
+Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan (depletable resources) yang memiliki nilai ekonomi tinggi dalam sistem perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
+sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna yang diberikan manusia terhadap komoditas tersebut. Menurut perspektif The Sense of Beauty yang dikemukakan oleh George Santayana, 
+nilai muncul akibat preferensi dan kebutuhan manusia terhadap suatu objek. Dalam konteks ekonomi modern, emas dipandang sebagai aset yang mampu menjaga 
+kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (hedging asset), serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
+Persepsi ini menyebabkan permintaan terhadap emas tetap tinggi dan membentuk ekspektasi bahwa emas akan terus memiliki nilai ekonomi di masa depan.
 
 Sebagai sumber daya yang terbatas, emas menghadapi tantangan deplesi akibat 
 aktivitas ekstraksi yang berkelanjutan. Berdasarkan data industri emas ANTAM 
 periode 2014–2024, harga emas meningkat dari USD 1.264,99 menjadi USD 2.354,35, 
 sementara volume produksi menurun dari 2.342 kg menjadi 1.019 kg.
-
 Pada periode yang sama, nilai marginal cost (MC) meningkat dari sekitar 728,5 
 menjadi 3.955. Secara ekonomi, kondisi ini menunjukkan bahwa proses ekstraksi 
 emas menjadi semakin mahal akibat berkurangnya cadangan yang mudah diakses 
 dan meningkatnya biaya operasional.
-
 Fenomena ini menunjukkan bahwa peningkatan nilai ekonomi emas tidak selalu 
 diikuti oleh peningkatan kapasitas produksi, melainkan dapat mencerminkan 
 meningkatnya kelangkaan sumber daya.
@@ -295,16 +284,13 @@ meningkatnya kelangkaan sumber daya.
 Kondisi ini menimbulkan dilema intertemporal dalam pengelolaan sumber daya alam, 
 yaitu pertukaran antara keuntungan ekonomi jangka pendek dan keberlanjutan 
 nilai ekonomi di masa depan.
-
 Ketika harga emas meningkat, perusahaan terdorong untuk mempercepat ekstraksi 
 guna memperoleh rente sumber daya (resource rent) yang lebih besar. Namun, 
 eksploitasi yang terlalu agresif dapat mempercepat penurunan cadangan dan 
 meningkatkan biaya ekstraksi pada periode berikutnya.
-
 Dalam perspektif ekonomi sumber daya alam, keputusan ekstraksi dipengaruhi 
 tidak hanya oleh kondisi pasar saat ini, tetapi juga oleh ekspektasi terhadap 
 nilai ekonomi di masa depan.
-
 Oleh karena itu, pengelolaan emas memerlukan alokasi sumber daya antarwaktu 
 yang efisien agar kepentingan generasi saat ini tidak mengorbankan potensi 
 manfaat ekonomi bagi generasi mendatang.
@@ -312,7 +298,6 @@ manfaat ekonomi bagi generasi mendatang.
 Berdasarkan uraian tersebut, penelitian ini bertujuan untuk menganalisis 
 bagaimana dinamika harga, biaya produksi, dan keputusan ekstraksi emas 
 mencerminkan persoalan efisiensi alokasi intertemporal.
-
 Penelitian ini juga bertujuan untuk memahami peran persepsi manusia dan 
 mekanisme pasar dalam membentuk nilai ekonomi emas, serta mengevaluasi 
 strategi pengelolaan ekstraksi yang lebih efisien dan berkelanjutan di tengah 
