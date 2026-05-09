@@ -359,7 +359,7 @@ st.markdown("### 1.1 Latar Belakang")
 
 st.write("""
 Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan (*depletable resources*) yang memiliki nilai ekonomi tinggi dalam sistem perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
-sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna yang diberikan manusia terhadap komoditas tersebut. Menurut perspektif The Sense of Beauty yang dikemukakan oleh George Santayana, 
+sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna yang diberikan manusia terhadap komoditas tersebut. Menurut perspektif *The Sense of Beauty* yang dikemukakan oleh George Santayana, 
 nilai muncul akibat preferensi dan kebutuhan manusia terhadap suatu objek. Dalam konteks ekonomi modern, emas dipandang sebagai aset yang mampu menjaga 
 kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (*hedging asset*), serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
 Persepsi ini menyebabkan permintaan terhadap emas tetap tinggi dan membentuk ekspektasi bahwa emas akan terus memiliki nilai ekonomi di masa depan.
