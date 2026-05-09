@@ -293,7 +293,7 @@ Perubahan negatif yang konsisten menunjukkan tekanan kelangkaan yang makin kuat.
 # -----------------------------
 # SIMULASI HARGA SUMBER DAYA
 # -----------------------------
-st.subheader("2A. Alat Simulasi Harga Sumber Daya")
+st.subheader("6. Alat Simulasi Harga Sumber Daya")
 
 st.write("""
 Bagian ini digunakan untuk mensimulasikan harga sumber daya emas
