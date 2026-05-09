@@ -247,7 +247,7 @@ sementara stock terus menurun. Kombinasi ini menandakan tekanan kelangkaan yang 
 Jika harga pasar berada di atas biaya ekstraksi, maka sumber daya semakin layak
 dikategorikan sebagai reserve secara ekonomis.
 
-Dalam perspektif intertemporal, kenaikan harga mencerminkan meningkatnya scarcity value
+Dalam perspektif intertemporal, kenaikan harga mencerminkan meningkatnya *scarcity value*
 dan ekspektasi nilai sumber daya di masa depan.
 """)
 
