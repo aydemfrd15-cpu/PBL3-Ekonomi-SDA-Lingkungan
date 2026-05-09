@@ -559,7 +559,7 @@ with colh2:
 
 st.write(f"""
 Rata-rata pertumbuhan harga aktual adalah {avg_actual_growth:.2f}% per tahun, sedangkan tingkat bunga
-simulasi adalah {discount_rate*100:.2f}%. Selisih rata-rata aktual terhadap benchmark Hotelling adalah
+simulasi adalah {discount_rate*100:.2f}%. Selisih rata-rata aktual terhadap *benchmark Hotelling* adalah
 {fmt_idr(avg_gap)}. Jika selisih kecil, jalur aktual mendekati efisiensi intertemporal; jika selisih
 besar, berarti ada distorsi pasar, biaya ekstraksi, atau mekanisme pasar yang menyimpang.
 """)
