@@ -130,39 +130,59 @@ st.markdown("""
 <style>
 
 .big-title {
-    font-size: 58px;
+    font-size: 64px;
     font-weight: 800;
-    color: white;
     line-height: 1.1;
     margin-bottom: 15px;
+
+    color: inherit;
+
+    letter-spacing: -1px;
 }
 
 .subtitle-text {
-    font-size: 20px;
-    color: #D3D3D3;
+    font-size: 22px;
     margin-bottom: 20px;
+
+    color: inherit;
+    opacity: 0.75;
 }
 
 .identity-box {
-    background-color: rgba(255,255,255,0.04);
-    padding: 25px;
-    border-radius: 15px;
-    border: 1px solid rgba(255,255,255,0.08);
+
+    background: rgba(120,120,120,0.08);
+
+    padding: 28px;
+
+    border-radius: 18px;
+
+    border: 1px solid rgba(120,120,120,0.15);
+
     margin-top: 10px;
+
+    backdrop-filter: blur(8px);
 }
 
 .identity-box p {
     font-size: 18px;
-    line-height: 1.8;
+    line-height: 1.9;
+}
+
+.identity-box h3 {
+    font-size: 34px;
+    margin-bottom: 20px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([1.2, 5])
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2 = st.columns([1, 4.5])
 
 with col1:
-    st.image("Logo Unisbaa.png", width=180)
+    st.image("Logo Unisbaa.png", width=210)
 
 with col2:
 
