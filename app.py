@@ -176,9 +176,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-</style>
-""", unsafe_allow_html=True)
-
 col1, col2 = st.columns([1, 4.5])
 
 with col1:
@@ -197,13 +194,13 @@ with col2:
     )
 
     st.markdown(
-        """
-        <div class="subtitle-text">
-        PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    """
+    <div class="subtitle-text">
+    PBL 3 - Ekonomi Sumber Daya Alam dan Lingkungan
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
     st.markdown("""
 <div class="identity-box">
