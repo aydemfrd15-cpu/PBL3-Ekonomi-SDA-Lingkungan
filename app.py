@@ -402,7 +402,7 @@ keterbatasan cadangan sumber daya alam.
 st.markdown("### 1.2 Rumusan Masalah")
 st.write("""
 1. Bagaimana dinamika perubahan harga dan teknologi memengaruhi pergeseran status cadangan
-   (resource ke reserve) pada komoditas ini?
+   (*resource* ke *reserve*) pada komoditas ini?
 2. Apakah jalur ekstraksi yang berjalan saat ini sudah memenuhi kondisi efisiensi alokasi
    intertemporal sesuai Aturan Hotelling?
 3. Bagaimana potensi distorsi pasar atau fenomena *Green Paradox* dapat terjadi akibat rencana
@@ -428,9 +428,9 @@ ekspektasi harga, dan cara manusia menilai risiko masa depan.
 
 st.markdown("### 2.2 Taksonomi Cadangan")
 st.write("""
-Resources adalah total sumber daya, sedangkan reserves adalah bagian yang layak secara ekonomis
-untuk ditambang. Perubahan harga, teknologi, dan biaya ekstraksi dapat menggeser status resource
-menjadi reserve.
+*Resources* adalah total sumber daya, sedangkan reserves adalah bagian yang layak secara ekonomis
+untuk ditambang. Perubahan harga, teknologi, dan biaya ekstraksi dapat menggeser status *resource*
+menjadi *reserve*.
 """)
 
 st.markdown("### 2.3 Model Alokasi Intertemporal dan Aturan Hotelling")
@@ -495,7 +495,7 @@ st.markdown("### 4.1 Analisis Pergeseran Spektrum Cadangan")
 st.write("""
 Hasil praktikum sebelumnya menunjukkan bahwa kenaikan harga emas dan perubahan biaya produksi
 dapat mengubah sumber daya yang semula belum ekonomis menjadi cadangan yang layak ditambang.
-Kondisi ini menegaskan bahwa batas antara resource dan reserve bersifat dinamis karena dipengaruhi
+Kondisi ini menegaskan bahwa batas antara *resource* dan *reserve* bersifat dinamis karena dipengaruhi
 harga pasar, teknologi, dan biaya ekstraksi.
 """)
 
@@ -526,7 +526,7 @@ with c6:
     st.pyplot(fig_res)
 
 st.write("""
-Jika harga naik atau teknologi menekan biaya efektif, sebagian resource bergerak menjadi reserve.
+Jika harga naik atau teknologi menekan biaya efektif, sebagian *resource* bergerak menjadi *reserve*.
 Inilah inti spektrum cadangan: perubahan status ekonomis karena perubahan pasar dan teknologi.
 """)
 
@@ -856,10 +856,10 @@ st.download_button(
 st.markdown("### 4.5 Jawaban Rumusan Masalah")
 
 st.write("""
-1. Perubahan harga dan teknologi memengaruhi pergeseran resource ke reserve karena kelayakan ekonomis berubah.
-2. Jalur ekstraksi yang efisien harus mengikuti logika Hotelling, yaitu harga bersih meningkat seiring waktu.
+1. Perubahan harga dan teknologi memengaruhi pergeseran *resource* ke *reserve* karena kelayakan ekonomis berubah.
+2. Jalur ekstraksi yang efisien harus mengikuti logika *Hotelling*, yaitu harga bersih meningkat seiring waktu.
 3. *Green Paradox* muncul ketika kebijakan hijau memicu percepatan ekstraksi sebelum regulasi diberlakukan.
-4. Struktur pasar memengaruhi besar kecilnya markup, sehingga ikut menentukan penyimpangan dari efisiensi intertemporal.
+4. Struktur pasar memengaruhi besar kecilnya *markup*, sehingga ikut menentukan penyimpangan dari efisiensi intertemporal.
 """)
 
 # -----------------------------
@@ -869,9 +869,9 @@ st.subheader("BAB V. Kesimpulan dan Rekomendasi")
 
 st.markdown("### 5.1 Kesimpulan")
 st.write("""
-Harga emas menunjukkan tren meningkat, sementara stock emas terus mengalami penurunan. Fenomena ini
+Harga emas menunjukkan tren meningkat, sementara *stock* emas terus mengalami penurunan. Fenomena ini
 menunjukkan tekanan kelangkaan pada sumber daya depletable. Analisis ini menegaskan relevansi
-Hotelling Rule, efisiensi dinamis, *green paradox*, dan pergeseran resource menjadi reserve dalam
+*Hotelling Rule*, efisiensi dinamis, *green paradox*, dan pergeseran *resource* menjadi *reserve* dalam
 pengelolaan sumber daya alam modern.
 """)
 
