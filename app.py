@@ -639,7 +639,7 @@ distortion_df = pd.DataFrame({
     "Komponen": [
         "Marginal Cost (MC)",
         "Biaya Sosial",
-        "*Total Social Cost*"
+        "Total Social Cost"
     ],
     "Nilai": [
         mc_value,
