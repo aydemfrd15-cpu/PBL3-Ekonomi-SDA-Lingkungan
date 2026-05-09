@@ -207,9 +207,9 @@ with col2:
 
 ### Kelompok 4
 
-**Salsa Zahratul Aulia** *(10090224004)*  
-**Aida Farida Kultsum** *(10090224014)*  
-**Nabil Athala Naufal** *(10090224022)*  
+**Salsa Zahratul Aulia** (10090224004)  
+**Aida Farida Kultsum** (10090224014)  
+**Nabil Athala Naufal** (10090224022)
 
 ---
 
