@@ -368,7 +368,7 @@ Sebagai sumber daya yang terbatas, emas menghadapi tantangan deplesi akibat
 aktivitas ekstraksi yang berkelanjutan. Berdasarkan data industri emas ANTAM 
 periode 2014–2024, harga emas meningkat dari USD 1.264,99 menjadi USD 2.354,35, 
 sementara volume produksi menurun dari 2.342 kg menjadi 1.019 kg.
-Pada periode yang sama, nilai marginal cost (MC) meningkat dari sekitar 728,5 
+Pada periode yang sama, nilai *marginal cost* (MC) meningkat dari sekitar 728,5 
 menjadi 3.955. Secara ekonomi, kondisi ini menunjukkan bahwa proses ekstraksi 
 emas menjadi semakin mahal akibat berkurangnya cadangan yang mudah diakses 
 dan meningkatnya biaya operasional.
@@ -799,7 +799,7 @@ Harga pasar hasil simulasi sebesar
 **{fmt_idr(P_market)}** dengan total produksi sebesar
 **{fmt_num(Q_market)}**.
 
-Nilai markup terhadap marginal cost sebesar
+Nilai markup terhadap *marginal cost* sebesar
 **{fmt_idr(markup)}** menunjukkan adanya *market power*
 dalam pembentukan harga.
 
