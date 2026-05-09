@@ -224,9 +224,9 @@ YUHKA SUNDAYA, S.E., M.Si.
 
 st.info("""
 Dashboard ini menggabungkan data historis, kondisi pasar saat ini,
-simulasi Hotelling Rule, Green Paradox, spektrum cadangan,
+simulasi Hotelling Rule, *Green Paradox*, spektrum cadangan,
 serta mekanisme struktur pasar untuk menjelaskan
-alokasi intertemporal sumber daya emas sebagai depletable resource.
+alokasi intertemporal sumber daya emas sebagai *depletable resource*.
 """)
 
 # -----------------------------
@@ -279,7 +279,7 @@ st.pyplot(fig1)
 
 st.write("""
 Grafik harga memperlihatkan tren kenaikan dalam jangka panjang. Kenaikan harga merefleksikan
-scarcity value, ekspektasi masa depan, dan peran emas sebagai aset lindung nilai.
+*Scarcity value*, ekspektasi masa depan, dan peran emas sebagai aset lindung nilai.
 """)
 
 # -----------------------------
@@ -295,7 +295,7 @@ st.pyplot(fig2)
 st.write("""
 Penurunan stock emas menunjukkan bahwa sumber daya terus diekstraksi dan cadangan fisik
 semakin menurun. Dalam ekonomi sumber daya alam, tren ini menegaskan karakter emas sebagai
-depletable resource.
+*depletable resource*.
 """)
 
 st.subheader("5. Tabel Perhitungan Perubahan Stock Emas")
@@ -358,10 +358,10 @@ st.subheader("BAB I. Pendahuluan")
 st.markdown("### 1.1 Latar Belakang")
 
 st.write("""
-Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan (depletable resources) yang memiliki nilai ekonomi tinggi dalam sistem perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
+Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan (*depletable resources*) yang memiliki nilai ekonomi tinggi dalam sistem perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
 sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna yang diberikan manusia terhadap komoditas tersebut. Menurut perspektif The Sense of Beauty yang dikemukakan oleh George Santayana, 
 nilai muncul akibat preferensi dan kebutuhan manusia terhadap suatu objek. Dalam konteks ekonomi modern, emas dipandang sebagai aset yang mampu menjaga 
-kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (hedging asset), serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
+kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (*hedging asset*), serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
 Persepsi ini menyebabkan permintaan terhadap emas tetap tinggi dan membentuk ekspektasi bahwa emas akan terus memiliki nilai ekonomi di masa depan.
 
 Sebagai sumber daya yang terbatas, emas menghadapi tantangan deplesi akibat 
@@ -380,7 +380,7 @@ Kondisi ini menimbulkan dilema intertemporal dalam pengelolaan sumber daya alam,
 yaitu pertukaran antara keuntungan ekonomi jangka pendek dan keberlanjutan 
 nilai ekonomi di masa depan.
 Ketika harga emas meningkat, perusahaan terdorong untuk mempercepat ekstraksi 
-guna memperoleh rente sumber daya (resource rent) yang lebih besar. Namun, 
+guna memperoleh rente sumber daya (*resource rent*) yang lebih besar. Namun, 
 eksploitasi yang terlalu agresif dapat mempercepat penurunan cadangan dan 
 meningkatkan biaya ekstraksi pada periode berikutnya.
 Dalam perspektif ekonomi sumber daya alam, keputusan ekstraksi dipengaruhi 
@@ -405,7 +405,7 @@ st.write("""
    (resource ke reserve) pada komoditas ini?
 2. Apakah jalur ekstraksi yang berjalan saat ini sudah memenuhi kondisi efisiensi alokasi
    intertemporal sesuai Aturan Hotelling?
-3. Bagaimana potensi distorsi pasar atau fenomena Green Paradox dapat terjadi akibat rencana
+3. Bagaimana potensi distorsi pasar atau fenomena *Green Paradox* dapat terjadi akibat rencana
    kebijakan lingkungan di masa depan?
 """)
 
@@ -439,10 +439,10 @@ Aturan Hotelling menyatakan bahwa harga bersih sumber daya depletable harus tumb
 dengan tingkat bunga, atau secara sederhana dP/dt = rP.
 """)
 
-st.markdown("### 2.4 Eksternalitas Lingkungan dan Green Paradox")
+st.markdown("### 2.4 Eksternalitas Lingkungan dan *Green Paradox*")
 st.write("""
 Jika biaya sosial tidak masuk ke harga pasar, maka terjadi kegagalan pasar. Ketika regulasi hijau
-diumumkan, produsen dapat mempercepat ekstraksi sebelum kebijakan berlaku. Inilah Green Paradox.
+diumumkan, produsen dapat mempercepat ekstraksi sebelum kebijakan berlaku. Inilah *Green Paradox*.
 """)
 
 # -----------------------------
@@ -571,8 +571,8 @@ st.download_button(
     mime="text/csv",
 )
 
-# 4.3 Green paradox
-st.markdown("### 4.3 Simulasi Green Paradox (Tabel dan Grafik)")
+# 4.3 *Green paradox*
+st.markdown("### 4.3 Simulasi *Green Paradox* (Tabel dan Grafik)")
 announce_year = st.slider("Tahun pengumuman kebijakan hijau (indeks waktu)", 1, horizon - 1 if horizon > 1 else 1, max(1, horizon // 2), 1)
 base_extraction = max((a - mc_value) / b, 0)
 
@@ -607,7 +607,7 @@ with g2:
 
 st.write("""
 Ketika kebijakan hijau diumumkan, produsen dapat mempercepat ekstraksi sebelum regulasi berlaku.
-Itulah efek Green Paradox: aturan yang dimaksudkan mengendalikan emisi justru memicu percepatan
+Itulah efek *Green Paradox*: aturan yang dimaksudkan mengendalikan emisi justru memicu percepatan
 ekstraksi di awal.
 """)
 # -----------------------------
@@ -618,7 +618,7 @@ st.markdown("#### Identifikasi Distorsi Pasar")
 
 st.write("""
 Harga pasar sumber daya alam sering kali belum memasukkan biaya sosial lingkungan seperti kerusakan lahan, pencemaran, dan degradasi lingkungan. Akibatnya, harga pasar menjadi lebih murah dibandingkan
-biaya sosial sebenarnya (social cost). Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
+biaya sosial sebenarnya (*social cost*). Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
 """)
 
 # INPUT BIAYA SOSIAL
@@ -639,7 +639,7 @@ distortion_df = pd.DataFrame({
     "Komponen": [
         "Marginal Cost (MC)",
         "Biaya Sosial",
-        "Total Social Cost"
+        "*Total Social Cost*"
     ],
     "Nilai": [
         mc_value,
@@ -656,7 +656,7 @@ fig_dist, ax_dist = plt.subplots()
 kategori = [
     "MC",
     "Biaya Sosial",
-    "Social Cost"
+    "*Social Cost*"
 ]
 
 nilai = [
@@ -678,7 +678,7 @@ sebesar {fmt_idr(mc_value)} belum mencerminkan
 seluruh biaya lingkungan.
 
 Ketika biaya sosial dimasukkan,
-total social cost meningkat menjadi
+*total social cost* meningkat menjadi
 {fmt_idr(social_price)}.
 
 Hal ini menunjukkan adanya distorsi pasar
@@ -700,14 +700,14 @@ st.markdown("### 4.4 Mekanisme Struktur Pasar dan Evaluasi Hotelling")
 
 st.write("""
 Bagian ini mensimulasikan bagaimana jumlah perusahaan memengaruhi harga,
-jumlah produksi, market power, dan efisiensi intertemporal sumber daya emas.
+jumlah produksi, *market power*, dan efisiensi intertemporal sumber daya emas.
 
 Jika:
 - jumlah perusahaan = 1 → monopoli
 - jumlah perusahaan = 2 → duopoli
 - jumlah perusahaan ≥ 3 → oligopoli
 
-Semakin sedikit jumlah perusahaan, semakin besar kekuatan pasar (market power)
+Semakin sedikit jumlah perusahaan, semakin besar kekuatan pasar (*market power*)
 dan semakin besar peluang penyimpangan dari efisiensi Hotelling.
 """)
 
@@ -800,7 +800,7 @@ Harga pasar hasil simulasi sebesar
 **{fmt_num(Q_market)}**.
 
 Nilai markup terhadap marginal cost sebesar
-**{fmt_idr(markup)}** menunjukkan adanya market power
+**{fmt_idr(markup)}** menunjukkan adanya *market power*
 dalam pembentukan harga.
 
 Semakin sedikit jumlah perusahaan, maka:
@@ -820,14 +820,14 @@ st.markdown("#### Evaluasi Efisiensi Hotelling")
 
 if markup > 500:
     evaluasi_hotelling = """
-    Struktur pasar menunjukkan market power yang cukup kuat.
+    Struktur pasar menunjukkan *market power* yang cukup kuat.
     Harga jauh di atas biaya ekstraksi sehingga jalur harga
     berpotensi menyimpang dari efisiensi Hotelling.
     """
 
 elif markup > 100:
     evaluasi_hotelling = """
-    Struktur pasar menunjukkan market power sedang.
+    Struktur pasar menunjukkan *market power* sedang.
     Jalur harga masih mengandung deviasi terhadap kondisi efisiensi.
     """
 
@@ -858,7 +858,7 @@ st.markdown("### 4.5 Jawaban Rumusan Masalah")
 st.write("""
 1. Perubahan harga dan teknologi memengaruhi pergeseran resource ke reserve karena kelayakan ekonomis berubah.
 2. Jalur ekstraksi yang efisien harus mengikuti logika Hotelling, yaitu harga bersih meningkat seiring waktu.
-3. Green Paradox muncul ketika kebijakan hijau memicu percepatan ekstraksi sebelum regulasi diberlakukan.
+3. *Green Paradox* muncul ketika kebijakan hijau memicu percepatan ekstraksi sebelum regulasi diberlakukan.
 4. Struktur pasar memengaruhi besar kecilnya markup, sehingga ikut menentukan penyimpangan dari efisiensi intertemporal.
 """)
 
@@ -871,15 +871,15 @@ st.markdown("### 5.1 Kesimpulan")
 st.write("""
 Harga emas menunjukkan tren meningkat, sementara stock emas terus mengalami penurunan. Fenomena ini
 menunjukkan tekanan kelangkaan pada sumber daya depletable. Analisis ini menegaskan relevansi
-Hotelling Rule, efisiensi dinamis, green paradox, dan pergeseran resource menjadi reserve dalam
+Hotelling Rule, efisiensi dinamis, *green paradox*, dan pergeseran resource menjadi reserve dalam
 pengelolaan sumber daya alam modern.
 """)
 
 st.markdown("### 5.2 Rekomendasi / Kebijakan Solutif")
 st.write("""
 Pemerintah perlu mengatur tempo ekstraksi, memperkuat insentif teknologi hemat biaya, mendorong
-substitusi, dan merancang kebijakan lingkungan yang bertahap agar tidak memicu race to extract
-atau Green Paradox. Instrumen pasar dan pengawasan harus dirancang agar efisien sekaligus adil
+substitusi, dan merancang kebijakan lingkungan yang bertahap agar tidak memicu *race to extract*
+atau *Green Paradox*. Instrumen pasar dan pengawasan harus dirancang agar efisien sekaligus adil
 lintas generasi.
 """)
 
