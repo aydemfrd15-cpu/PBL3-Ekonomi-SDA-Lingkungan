@@ -503,10 +503,102 @@ yang nilainya meningkat seiring kelangkaan.
 """)
 
 st.markdown("### 2.4 Eksternalitas Lingkungan dan *Green Paradox*")
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
+st.write("""
+Dalam ekonomi sumber daya depletable, kegagalan pasar terjadi ketika
+biaya sosial dari aktivitas ekstraksi seperti polusi, kerusakan lingkungan,
+dan emisi karbon tidak tercermin dalam harga pasar.
 
+Akibatnya, harga pasar menjadi lebih rendah dibandingkan biaya sosial sebenarnya,
+sehingga ekstraksi cenderung berlangsung lebih cepat daripada tingkat yang efisien.
+
+Fenomena ini disebut eksternalitas negatif karena sebagian biaya produksi
+ditanggung oleh masyarakat dan lingkungan, bukan oleh produsen secara langsung.
+
+Dalam perspektif intertemporal, produsen juga dapat merespons rencana
+regulasi lingkungan di masa depan dengan mempercepat ekstraksi saat ini.
+Fenomena tersebut dikenal sebagai *Green Paradox*.
+""")
+
+# -----------------------------
+# Simulasi Green Paradox
+# -----------------------------
+
+gp_years = list(range(horizon + 1))
+
+baseline_extraction = []
+policy_extraction = []
+
+base_q = max((a - mc_value) / b, 0)
+
+announce_year = max(1, horizon // 2)
+
+for t in gp_years:
+
+    q_base = max(base_q * (1 - 0.05 * t), 0)
+
+    if t < announce_year:
+        q_policy = q_base * (
+            1 + (reg_intensity / 100) * 0.60
+        )
+
+    elif t == announce_year:
+        q_policy = q_base * (
+            1 + (reg_intensity / 100) * 0.20
+        )
+
+    else:
+        q_policy = q_base * (
+            1 - (reg_intensity / 100) * 0.25
+        )
+
+    baseline_extraction.append(q_base)
+    policy_extraction.append(q_policy)
+
+green_df = pd.DataFrame({
+    "Periode": gp_years,
+    "Ekstraksi_Baseline": baseline_extraction,
+    "Ekstraksi_dengan_Kebijakan": policy_extraction
+})
+
+gcol1, gcol2 = st.columns(2)
+
+with gcol1:
+    st.dataframe(green_df, use_container_width=True)
+
+with gcol2:
+
+    fig_green, ax_green = plt.subplots()
+
+    ax_green.plot(
+        green_df["Periode"],
+        green_df["Ekstraksi_Baseline"],
+        marker="o",
+        label="Baseline"
+    )
+
+    ax_green.plot(
+        green_df["Periode"],
+        green_df["Ekstraksi_dengan_Kebijakan"],
+        marker="o",
+        label="Dengan Kebijakan"
+    )
+
+    ax_green.set_xlabel("Periode")
+    ax_green.set_ylabel("Ekstraksi")
+
+    ax_green.legend()
+
+    st.pyplot(fig_green)
+
+st.write("""
+Grafik menunjukkan bahwa sebelum regulasi lingkungan diberlakukan,
+produsen cenderung mempercepat ekstraksi untuk menghindari biaya
+yang lebih tinggi di masa depan.
+
+Kondisi ini menggambarkan *Green Paradox*,
+yaitu ketika kebijakan lingkungan yang dirancang untuk mengurangi emisi
+justru memicu percepatan ekstraksi dalam jangka pendek.
+""")
 st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
     page_icon="🟡",
