@@ -432,8 +432,74 @@ Dalam ekonomi sumber daya *depletable*, *resources* adalah total sumber daya yan
 
 st.markdown("### 2.3 Model Alokasi Intertemporal dan Aturan Hotelling")
 st.write("""
-Aturan Hotelling menyatakan bahwa harga bersih sumber daya depletable harus tumbuh sejalan
-dengan tingkat bunga, atau secara sederhana dP/dt = rP.
+Aturan Hotelling menyatakan bahwa harga bersih sumber daya depletable
+harus tumbuh sebesar tingkat bunga agar alokasi sumber daya efisien antar waktu.
+
+Secara matematis:
+
+dP/dt = rP
+
+di mana:
+- P = harga bersih sumber daya
+- r = tingkat bunga / diskonto
+- dP/dt = perubahan harga terhadap waktu
+
+Dalam kondisi efisien, pemilik sumber daya akan bersikap netral antara:
+1. mengekstraksi sekarang lalu menginvestasikan hasilnya,
+2. atau menahan sumber daya untuk dijual di masa depan.
+
+Jika harga sumber daya tumbuh lebih cepat dibanding tingkat bunga,
+maka penundaan ekstraksi menjadi lebih rasional.
+Sebaliknya, jika pertumbuhan harga lebih rendah dari tingkat bunga,
+ekstraksi saat ini menjadi lebih menguntungkan.
+""")
+
+# -----------------------------
+# Simulasi Jalur Hotelling
+# -----------------------------
+
+hotelling_year = list(range(horizon + 1))
+
+hotelling_path = [
+    first_price * ((1 + discount_rate) ** t)
+    for t in hotelling_year
+]
+
+hotelling_sim = pd.DataFrame({
+    "Periode": hotelling_year,
+    "Harga_Hotelling": hotelling_path
+})
+
+c_hot1, c_hot2 = st.columns(2)
+
+with c_hot1:
+    st.dataframe(hotelling_sim, use_container_width=True)
+
+with c_hot2:
+    fig_hsim, ax_hsim = plt.subplots()
+
+    ax_hsim.plot(
+        hotelling_sim["Periode"],
+        hotelling_sim["Harga_Hotelling"],
+        marker="o"
+    )
+
+    ax_hsim.set_xlabel("Periode")
+    ax_hsim.set_ylabel("Harga Bersih")
+
+    st.pyplot(fig_hsim)
+
+st.write("""
+Simulasi ini menunjukkan jalur teoritis harga sumber daya berdasarkan
+Aturan Hotelling.
+
+Semakin tinggi tingkat bunga, semakin cepat harga sumber daya
+harus meningkat agar pemilik sumber daya tetap indifferent antara
+mengekstraksi sekarang atau di masa depan.
+
+Dalam konteks emas, kenaikan harga dan MUC menunjukkan bahwa
+emas diperlakukan sebagai aset waktu (*asset in situ*)
+yang nilainya meningkat seiring kelangkaan.
 """)
 
 st.markdown("### 2.4 Eksternalitas Lingkungan dan *Green Paradox*")
