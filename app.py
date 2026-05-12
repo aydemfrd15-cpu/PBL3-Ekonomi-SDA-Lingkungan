@@ -139,51 +139,81 @@ market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 els
 st.markdown("""
 <style>
 
+.cover-wrapper{
+    margin-top: 5px;
+    margin-bottom: 40px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
 .big-title {
-    font-size: 72px;
-    font-weight: 800;
-    line-height: 1.05;
-    margin-bottom: 10px;
+    font-size: 78px;
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -2.5px;
+    margin-bottom: 12px;
     color: inherit;
-    letter-spacing: -2px;
 }
 
 .subtitle-text {
     font-size: 24px;
-    margin-top: 5px;
-    margin-bottom: 28px;
-    color: inherit;
+    font-weight: 500;
     opacity: 0.78;
+    margin-bottom: 34px;
+    color: inherit;
 }
 
 .identity-box {
 
-    background: rgba(120,120,120,0.08);
-
-    padding: 34px;
-
-    border-radius: 22px;
+    background: rgba(255,255,255,0.04);
 
     border: 1px solid rgba(255,255,255,0.08);
 
-    margin-top: 10px;
+    border-radius: 28px;
 
-    backdrop-filter: blur(10px);
-}
+    padding-top: 38px;
+    padding-bottom: 38px;
+    padding-left: 38px;
+    padding-right: 38px;
 
-.identity-box p {
-    font-size: 19px;
-    line-height: 1.95;
+    backdrop-filter: blur(12px);
+
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.02),
+        0 10px 35px rgba(0,0,0,0.35);
+
+    max-width: 1100px;
 }
 
 .identity-box h3 {
-    font-size: 36px;
-    margin-bottom: 20px;
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 28px;
+    letter-spacing: -1px;
 }
 
-.cover-wrapper{
-    margin-top: 10px;
-    margin-bottom: 20px;
+.identity-box p {
+    font-size: 20px;
+    line-height: 2;
+    margin-bottom: 18px;
+}
+
+.identity-box hr {
+    margin-top: 25px;
+    margin-bottom: 30px;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+.logo-wrapper{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top: 20px;
+}
+
+.logo-wrapper img{
+    border-radius: 24px;
 }
 
 </style>
@@ -191,15 +221,25 @@ st.markdown("""
 
 st.markdown('<div class="cover-wrapper">', unsafe_allow_html=True)
 
-col1, col2 = st.columns([1.1, 4])
+col1, col2 = st.columns([1, 4.8], gap="large")
 
 with col1:
 
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="logo-wrapper">
+        """,
+        unsafe_allow_html=True
+    )
 
     st.image(
         "Logo Unisbaa.png",
-        width=230
+        width=250
+    )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
     )
 
 with col2:
@@ -208,7 +248,7 @@ with col2:
         """
         <div class="big-title">
         Analisis Intertemporal<br>
-        Sumber Daya Emas
+        Sumber Daya <span style="color:#F4C542;">Emas</span>
         </div>
         """,
         unsafe_allow_html=True
