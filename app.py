@@ -422,8 +422,7 @@ st.subheader("BAB II. Tinjauan Pustaka dan Landasan Teoritis")
 
 st.markdown("### 2.1 Konsep Nilai dan Ekspektasi Waktu (Perspektif Santayana)")
 st.write("""
-Keputusan optimal alokasi sumber daya tidak sepenuhnya objektif, melainkan dipengaruhi persepsi,
-ekspektasi harga, dan cara manusia menilai risiko masa depan.
+Menurut *The Sense of Beauty* karya George Santayana, keputusan optimal dalam alokasi sumber daya tidak hanya ditentukan oleh perhitungan ekonomi, tetapi juga oleh persepsi dan harapan manusia terhadap masa depan. Dalam sumber daya tak terbarukan seperti emas, keputusan ekstraksi melibatkan pilihan antara manfaat saat ini dan potensi nilai di masa depan. Jika harga diperkirakan naik, ekstraksi cenderung ditunda, sedangkan kebutuhan ekonomi dapat mempercepat ekstraksi. Hasil praktikum menunjukkan harga dan MUC meningkat, sementara laju ekstraksi menurun, sehingga pengelolaan sumber daya dipengaruhi faktor ekonomi sekaligus persepsi dan ekspektasi manusia.
 """)
 
 st.markdown("### 2.2 Taksonomi Cadangan")
