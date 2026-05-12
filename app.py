@@ -136,63 +136,74 @@ st.markdown("""
 <style>
 
 .big-title {
-    font-size: 64px;
+    font-size: 72px;
     font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: 15px;
-
+    line-height: 1.05;
+    margin-bottom: 10px;
     color: inherit;
-
-    letter-spacing: -1px;
+    letter-spacing: -2px;
 }
 
 .subtitle-text {
-    font-size: 22px;
-    margin-bottom: 20px;
-
+    font-size: 24px;
+    margin-top: 5px;
+    margin-bottom: 28px;
     color: inherit;
-    opacity: 0.75;
+    opacity: 0.78;
 }
 
 .identity-box {
 
     background: rgba(120,120,120,0.08);
 
-    padding: 28px;
+    padding: 34px;
 
-    border-radius: 18px;
+    border-radius: 22px;
 
-    border: 1px solid rgba(120,120,120,0.15);
+    border: 1px solid rgba(255,255,255,0.08);
 
     margin-top: 10px;
 
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
 }
 
 .identity-box p {
-    font-size: 18px;
-    line-height: 1.9;
+    font-size: 19px;
+    line-height: 1.95;
 }
 
 .identity-box h3 {
-    font-size: 34px;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+.cover-wrapper{
+    margin-top: 10px;
     margin-bottom: 20px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([1, 4.5])
+st.markdown('<div class="cover-wrapper">', unsafe_allow_html=True)
+
+col1, col2 = st.columns([1.1, 4])
 
 with col1:
-    st.image("Logo Unisbaa.png", width=210)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    st.image(
+        "Logo Unisbaa.png",
+        width=230
+    )
 
 with col2:
 
     st.markdown(
         """
         <div class="big-title">
-        Analisis Intertemporal <br>
+        Analisis Intertemporal<br>
         Sumber Daya Emas
         </div>
         """,
@@ -200,33 +211,41 @@ with col2:
     )
 
     st.markdown(
-    """
-    <div class="subtitle-text">
-    PBL 3 - Ekonomi Sumber Daya Alam dan Lingkungan
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <div class="subtitle-text">
+        PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     st.markdown("""
-<div class="identity-box">
+    <div class="identity-box">
 
-### Kelompok 4
+    <h3>Kelompok 4</h3>
 
-**Salsa Zahratul Aulia** (10090224004)  
-**Aida Farida Kultsum** (10090224014)  
-**Nabil Athala Naufal** (10090224022)
+    <p>
+    <b>Salsa Zahratul Aulia</b> (10090224004)<br>
+    <b>Aida Farida Kultsum</b> (10090224014)<br>
+    <b>Nabil Athala Naufal</b> (10090224022)
+    </p>
 
----
+    <hr>
 
-**Mata Kuliah:**  
-Ekonomi Sumber Daya Alam dan Lingkungan  
+    <p>
+    <b>Mata Kuliah:</b><br>
+    Ekonomi Sumber Daya Alam dan Lingkungan
+    </p>
 
-**Dosen Pengampu:**  
-YUHKA SUNDAYA, S.E., M.Si.
+    <p>
+    <b>Dosen Pengampu:</b><br>
+    YUHKA SUNDAYA, S.E., M.Si.
+    </p>
 
-</div>
-""", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 st.info("""
 Dashboard ini menggabungkan data historis, kondisi pasar saat ini,
