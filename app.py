@@ -3,6 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.style.use("dark_background")
 
+plt.rcParams["figure.figsize"] = (8, 4)
+plt.rcParams["axes.edgecolor"] = "white"
+plt.rcParams["axes.linewidth"] = 1.2
+plt.rcParams["font.size"] = 10
+
 st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
     page_icon="🟡",
@@ -631,6 +636,36 @@ justru memicu percepatan ekstraksi dalam jangka pendek.
 """)
 
 # -----------------------------
+# INTERPRETASI GREEN PARADOX
+# -----------------------------
+
+avg_policy = gp_table["Ekstraksi_dengan_Kebijakan"].mean()
+avg_base = gp_table["Ekstraksi_Baseline"].mean()
+
+if avg_policy > avg_base:
+
+    st.error("""
+    Simulasi menunjukkan adanya indikasi *Green Paradox*.
+
+    Pengumuman kebijakan lingkungan menyebabkan produsen
+    mempercepat ekstraksi sebelum regulasi diberlakukan sepenuhnya.
+
+    Fenomena ini dikenal sebagai *race to extract*,
+    yaitu percepatan produksi untuk menghindari
+    potensi kerugian akibat kebijakan masa depan.
+    """)
+
+else:
+
+    st.success("""
+    Simulasi belum menunjukkan indikasi *Green Paradox* yang kuat.
+
+    Kebijakan lingkungan tidak memicu percepatan ekstraksi
+    secara signifikan sehingga tekanan eksploitasi
+    masih relatif terkendali.
+    """)
+
+# -----------------------------
 # IMPLEMENTASI TEKNIS
 # -----------------------------
 st.subheader("Implementasi Teknis")
@@ -729,6 +764,36 @@ simulasi adalah {discount_rate*100:.2f}%. Selisih rata-rata aktual terhadap *ben
 {fmt_idr(avg_gap)}. Jika selisih kecil, jalur aktual mendekati efisiensi intertemporal dan jika selisih
 besar, berarti ada distorsi pasar, biaya ekstraksi, atau mekanisme pasar yang menyimpang.
 """)
+
+# -----------------------------
+# INTERPRETASI HOTELLING
+# -----------------------------
+
+if avg_actual_growth > (discount_rate * 100):
+
+    st.success("""
+    Pertumbuhan harga aktual lebih tinggi dibanding tingkat bunga.
+
+    Hal ini menunjukkan bahwa penahanan ekstraksi masih rasional
+    karena nilai sumber daya meningkat lebih cepat dibanding
+    opportunity cost modal.
+
+    Kondisi ini relatif mendekati logika efisiensi intertemporal
+    menurut Aturan Hotelling.
+    """)
+
+else:
+
+    st.warning("""
+    Pertumbuhan harga aktual lebih rendah dibanding tingkat bunga.
+
+    Hal ini menunjukkan bahwa ekstraksi saat ini cenderung
+    lebih menguntungkan dibanding menahan sumber daya
+    untuk masa depan.
+
+    Kondisi ini menunjukkan adanya penyimpangan
+    dari jalur efisiensi Hotelling.
+    """)
 
 st.download_button(
     "Download Tabel Hotelling CSV",
@@ -862,6 +927,38 @@ st.download_button(
 # MEKANISME STRUKTUR PASAR
 # -----------------------------
 st.markdown("### 4.4 Mekanisme Struktur Pasar dan Evaluasi Hotelling")
+st.markdown("#### Perbandingan Struktur Pasar")
+
+market_compare = pd.DataFrame({
+    "Struktur Pasar": [
+        "Monopoli",
+        "Oligopoli",
+        "Persaingan Sempurna"
+    ],
+
+    "Karakteristik": [
+        "Harga tinggi, produksi rendah",
+        "Harga moderat, market power terbatas",
+        "Harga mendekati MC"
+    ],
+
+    "Efisiensi Hotelling": [
+        "Cenderung menyimpang",
+        "Sebagian menyimpang",
+        "Paling efisien"
+    ],
+
+    "Kecepatan Habisnya Cadangan": [
+        "Lebih lambat",
+        "Sedang",
+        "Lebih cepat"
+    ]
+})
+
+st.dataframe(
+    market_compare,
+    use_container_width=True
+)
 
 st.write("""
 Bagian ini mensimulasikan bagaimana jumlah perusahaan memengaruhi harga,
