@@ -160,7 +160,7 @@ st.markdown("""
     font-size: 24px;
     font-weight: 500;
     opacity: 0.68;
-    margin-bottom: 34px;
+    margin-bottom: 26px;
     color: inherit;
 }
 
@@ -173,9 +173,11 @@ st.markdown("""
     border-radius: 28px;
 
     padding-top: 30px;
-    padding-bottom: 24px;
+    padding-bottom: 12px;
     padding-left: 38px;
     padding-right: 38px;
+
+    margin-top: 8px;
 
     backdrop-filter: blur(12px);
 
@@ -187,7 +189,7 @@ st.markdown("""
 }
 
 .identity-box h3 {
-    font-size: 42px;
+    font-size: 34px;
     font-weight: 800;
     margin-bottom: 28px;
     letter-spacing: -1px;
@@ -222,7 +224,7 @@ st.markdown("""
 
 st.markdown('<div class="cover-wrapper">', unsafe_allow_html=True)
 
-col1, col2 = st.columns([1, 4.8], gap="large")
+col1, col2 = st.columns([1.2, 4.5], gap="large")
 
 with col1:
 
