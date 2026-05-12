@@ -890,7 +890,6 @@ P_market = a - (b * Q_market)
 
 markup = P_market - mc_value
 muc_value = P_market - mc_value
-"Marginal User Cost": [muc_value],
 
 produksi_perusahaan = Q_market / jumlah_perusahaan
 umur_cadangan = latest_stock / Q_market if Q_market > 0 else 0
@@ -905,6 +904,7 @@ market_result = pd.DataFrame({
     "Total Produksi": [Q_market],
     "Produksi per Perusahaan": [produksi_perusahaan],
     "Markup terhadap MC": [markup],
+    "Marginal User Cost": [muc_value],
     "Estimasi Umur Cadangan": [umur_cadangan],
 })
 
