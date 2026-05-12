@@ -153,12 +153,13 @@ st.markdown("""
     letter-spacing: -2.5px;
     margin-bottom: 12px;
     color: inherit;
+    text-shadow: 0 0 18px rgba(255,255,255,0.05);
 }
 
 .subtitle-text {
     font-size: 24px;
     font-weight: 500;
-    opacity: 0.78;
+    opacity: 0.68;
     margin-bottom: 34px;
     color: inherit;
 }
@@ -171,8 +172,8 @@ st.markdown("""
 
     border-radius: 28px;
 
-    padding-top: 38px;
-    padding-bottom: 38px;
+    padding-top: 30px;
+    padding-bottom: 24px;
     padding-left: 38px;
     padding-right: 38px;
 
@@ -194,7 +195,7 @@ st.markdown("""
 
 .identity-box p {
     font-size: 20px;
-    line-height: 2;
+    line-height: 1.7;
     margin-bottom: 18px;
 }
 
