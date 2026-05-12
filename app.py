@@ -101,7 +101,12 @@ Depletable Resource Allocation (Emas)
 Universitas Islam Bandung
 """)
 
-scenario = st.sidebar.radio("Scenario", ["Pesimis", "Moderat", "Optimis"], index=1)
+scenario = st.sidebar.radio(
+    "Scenario",
+    ["Pesimis", "Moderat", "Optimis"],
+    index=1,
+    key="scenario_sidebar"
+)
 
 st.sidebar.subheader("Parameter Simulasi")
 discount_rate = st.sidebar.slider("Tingkat bunga / diskonto (r)", 0.0, 0.20, r_default, 0.005)
@@ -599,7 +604,10 @@ Kondisi ini menggambarkan *Green Paradox*,
 yaitu ketika kebijakan lingkungan yang dirancang untuk mengurangi emisi
 justru memicu percepatan ekstraksi dalam jangka pendek.
 """)
-st.set_page_config(
+
+# 4.3 *Green paradox*
+st.markdown("### 4.3 Simulasi *Green Paradox* (Tabel dan Grafik)")
+announce_st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
     page_icon="🟡",
     layout="wide",
@@ -698,10 +706,22 @@ Depletable Resource Allocation (Emas)
 Universitas Islam Bandung
 """)
 
-scenario = st.sidebar.radio("Scenario", ["Pesimis", "Moderat", "Optimis"], index=1)
+scenario = st.sidebar.radio(
+    "Scenario",
+    ["Pesimis", "Moderat", "Optimis"],
+    index=1,
+    key="scenario_sidebar"
+)
 
 st.sidebar.subheader("Parameter Simulasi")
-discount_rate = st.sidebar.slider("Tingkat bunga / diskonto (r)", 0.0, 0.20, r_default, 0.005)
+discount_rate = st.sidebar.slider(
+    "Tingkat bunga / diskonto (r)",
+    0.0,
+    0.20,
+    r_default,
+    0.005,
+    key="discount_rate"
+)
 horizon = st.sidebar.slider("Horizon simulasi (tahun)", 3, 15, T_default, 1)
 mc_value = st.sidebar.slider("Biaya ekstraksi rata-rata / MC", 500.0, 4000.0, mc_default, 10.0)
 tech_improvement = st.sidebar.slider("Perbaikan teknologi (%)", 0.0, 30.0, 10.0, 0.5)
@@ -1230,10 +1250,7 @@ st.download_button(
     file_name="hotelling_emas.csv",
     mime="text/csv",
 )
-
-# 4.3 *Green paradox*
-st.markdown("### 4.3 Simulasi *Green Paradox* (Tabel dan Grafik)")
-announce_year = st.slider("Tahun pengumuman kebijakan hijau (indeks waktu)", 1, horizon - 1 if horizon > 1 else 1, max(1, horizon // 2), 1)
+year = st.slider("Tahun pengumuman kebijakan hijau (indeks waktu)", 1, horizon - 1 if horizon > 1 else 1, max(1, horizon // 2), 1)
 base_extraction = max((a - mc_value) / b, 0)
 
 gp_rows = []
