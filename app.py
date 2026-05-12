@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 plt.style.use("dark_background")
-
 plt.rcParams["figure.figsize"] = (8, 4)
 plt.rcParams["axes.edgecolor"] = "white"
 plt.rcParams["axes.linewidth"] = 1.2
