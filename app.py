@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.style.use("dark_background")
 
 st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
@@ -871,8 +872,11 @@ if jumlah_perusahaan == 1:
 elif jumlah_perusahaan == 2:
     struktur_pasar = "Duopoli"
 
-else:
+elif jumlah_perusahaan <= 5:
     struktur_pasar = "Oligopoli"
+
+else:
+    struktur_pasar = "Persaingan Sempurna"
 
 # -----------------------------
 # RUMUS COURNOT
@@ -885,6 +889,8 @@ Q_market = (
 P_market = a - (b * Q_market)
 
 markup = P_market - mc_value
+muc_value = P_market - mc_value
+"Marginal User Cost": [muc_value],
 
 produksi_perusahaan = Q_market / jumlah_perusahaan
 umur_cadangan = latest_stock / Q_market if Q_market > 0 else 0
@@ -953,6 +959,17 @@ Semakin sedikit jumlah perusahaan, maka:
 Sebaliknya, ketika jumlah perusahaan meningkat,
 struktur pasar bergerak mendekati persaingan sempurna,
 sehingga harga semakin dekat dengan biaya ekstraksi.
+""")
+st.write(f"""
+Dengan tingkat produksi saat ini,
+estimasi umur cadangan emas adalah sekitar
+{umur_cadangan:.2f} periode.
+
+Hal ini menunjukkan bahwa semakin besar total produksi,
+semakin cepat cadangan sumber daya akan habis.
+
+Sebaliknya, pembatasan produksi dan efisiensi ekstraksi
+dapat memperpanjang umur cadangan sumber daya.
 """)
 
 # -----------------------------
