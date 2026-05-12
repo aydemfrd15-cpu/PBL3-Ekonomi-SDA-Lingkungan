@@ -151,6 +151,7 @@ st.markdown("""
     font-weight: 900;
     line-height: 1.02;
     letter-spacing: -2.5px;
+    margin-top: 12px;
     margin-bottom: 12px;
     color: inherit;
     text-shadow: 0 0 18px rgba(255,255,255,0.05);
@@ -237,7 +238,7 @@ with col1:
 
     st.image(
         "Logo Unisbaa.png",
-        width=250
+        width=220
     )
 
     st.markdown(
