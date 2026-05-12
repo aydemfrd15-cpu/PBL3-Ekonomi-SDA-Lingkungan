@@ -427,9 +427,7 @@ Menurut *The Sense of Beauty* karya George Santayana, keputusan optimal dalam al
 
 st.markdown("### 2.2 Taksonomi Cadangan")
 st.write("""
-*Resources* adalah total sumber daya, sedangkan reserves adalah bagian yang layak secara ekonomis
-untuk ditambang. Perubahan harga, teknologi, dan biaya ekstraksi dapat menggeser status *resource*
-menjadi *reserve*.
+Dalam ekonomi sumber daya *depletable*, *resources* adalah total sumber daya yang tersedia secara geologis, sedangkan *reserves* adalah bagian dari *resources* yang sudah diketahui dan layak diekstraksi secara ekonomi dengan teknologi saat ini. Batas keduanya bersifat dinamis karena dipengaruhi harga pasar, teknologi, dan biaya ekstraksi. Saat harga naik atau teknologi berkembang, resources yang sebelumnya belum ekonomis dapat berubah menjadi reserves; sebaliknya, saat harga turun atau biaya naik, *reserves* dapat kembali menjadi tidak layak ditambang. Pada kasus emas, hasil praktikum menunjukkan biaya marjinal ekstraksi meningkat seiring waktu karena produksi menurun dan ekstraksi makin sulit, sehingga sebagian *reserves* bisa menjadi tidak ekonomis jika tidak diimbangi kenaikan harga atau inovasi teknologi.
 """)
 
 st.markdown("### 2.3 Model Alokasi Intertemporal dan Aturan Hotelling")
