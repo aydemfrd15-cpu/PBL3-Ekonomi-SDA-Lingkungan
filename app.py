@@ -404,6 +404,11 @@ mekanisme pasar dalam membentuk nilai ekonomi emas, serta mengevaluasi
 strategi pengelolaan ekstraksi yang lebih efisien dan berkelanjutan di tengah 
 keterbatasan cadangan sumber daya alam.
 """)
+st.caption("""
+Sumber data penelitian berasal dari data praktikum estimasi biaya,
+tren harga emas historis, serta pengolahan simulasi intertemporal
+yang disusun berdasarkan laporan praktikum Kelompok 4.
+""")
 
 st.markdown("### 1.2 Rumusan Masalah")
 st.write("""
@@ -851,6 +856,17 @@ Jika:
 Semakin sedikit jumlah perusahaan, semakin besar kekuatan pasar (*market power*)
 dan semakin besar peluang penyimpangan dari efisiensi Hotelling.
 """)
+st.info("""
+Interpretasi struktur pasar:
+
+• Monopoli → hanya terdapat 1 perusahaan dominan.  
+• Duopoli → pasar dikendalikan oleh 2 perusahaan utama.  
+• Oligopoli → pasar terdiri dari beberapa perusahaan besar.  
+• Persaingan sempurna → jumlah perusahaan sangat banyak sehingga harga mendekati biaya produksi.
+
+Semakin kecil jumlah perusahaan, semakin besar kemampuan perusahaan
+mempengaruhi harga pasar (*market power*).
+""")
 
 # -----------------------------
 # INPUT STRUKTUR PASAR
@@ -970,6 +986,15 @@ semakin cepat cadangan sumber daya akan habis.
 
 Sebaliknya, pembatasan produksi dan efisiensi ekstraksi
 dapat memperpanjang umur cadangan sumber daya.
+""")
+st.caption("""
+Estimasi umur cadangan dihitung menggunakan pendekatan sederhana:
+
+umur cadangan = total stock ÷ total produksi.
+
+Nilai ini digunakan sebagai indikator simulasi intertemporal
+untuk memperkirakan seberapa cepat sumber daya habis
+pada berbagai struktur pasar.
 """)
 
 # -----------------------------
