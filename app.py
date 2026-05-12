@@ -638,8 +638,8 @@ justru memicu percepatan ekstraksi dalam jangka pendek.
 # INTERPRETASI GREEN PARADOX
 # -----------------------------
 
-avg_policy = gp_table["Ekstraksi_dengan_Kebijakan"].mean()
-avg_base = gp_table["Ekstraksi_Baseline"].mean()
+avg_policy = green_df["Ekstraksi_dengan_Kebijakan"].mean()
+avg_base = green_df["Ekstraksi_Baseline"].mean()
 
 if avg_policy > avg_base:
 
