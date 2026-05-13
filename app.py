@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -76,12 +75,21 @@ def reserve_status(price: float, mc: float) -> str:
     return "Titik impas"
 
 
+def depletion_period(df: pd.DataFrame):
+    hit = df.index[df["Stock_Tersisa"] <= 0].tolist()
+    if hit:
+        return int(df.loc[hit[0], "Periode"])
+    return None
+
+
+def depletion_label(df: pd.DataFrame, horizon: int) -> str:
+    dp = depletion_period(df)
+    if dp is None:
+        return f"> {horizon}"
+    return str(dp)
+
+
 def load_historical_data() -> pd.DataFrame:
-    """
-    Prioritas:
-    1. data_emas.csv kalau ada
-    2. fallback bawaan supaya app tetap jalan
-    """
     fallback = pd.DataFrame(
         {
             "Tahun": list(range(2014, 2025)),
@@ -175,13 +183,6 @@ def simulate_market(
     depletion_penalty: float,
     r: float,
 ):
-    """
-    Simulasi yang dibuat supaya:
-    - angka berubah saat slider diubah
-    - persaingan, monopoli, oligopoli punya rumus beda
-    - oligopoli sensitif terhadap jumlah perusahaan
-    - ada benchmark Hotelling untuk pembanding harga
-    """
     rows = []
     stock = max(reserve0, 1.0)
 
@@ -190,29 +191,22 @@ def simulate_market(
         depletion_ratio = max(0.0, min(1.0, depletion_ratio))
 
         scarcity_rent = lambda0 * ((1.0 + r) ** t) * (1.0 + 0.35 * depletion_ratio)
-
-        # Intersep permintaan bergerak bersama kondisi kelangkaan dan ekspektasi harga
         a_t = p0 * ((1.0 + demand_growth) ** t) + 0.20 * scarcity_rent
 
-        # Biaya bergerak naik, teknologi menahan kenaikannya
         effective_cost_growth = max(cost_growth - tech_improvement, -0.95)
         mc_t = mc0 * ((1.0 + effective_cost_growth) ** t) * (1.0 + depletion_penalty * depletion_ratio)
 
         if structure == "Persaingan Sempurna":
-            # P = MC, Q = (a - MC)/b
             q_t = max((a_t - mc_t) / b0, 0.0)
             q_t = min(q_t, stock)
             p_t = max(mc_t, a_t - b0 * q_t)
 
         elif structure == "Monopoli":
-            # Q = (a - MC)/(2b), P = a - bQ
             q_t = max((a_t - mc_t) / (2.0 * b0), 0.0)
             q_t = min(q_t, stock)
             p_t = max(a_t - b0 * q_t, mc_t)
 
         elif structure == "Oligopoli":
-            # Cournot symmetric:
-            # Q = n(a-c)/(b(n+1))
             n = max(int(n_firms), 2)
             q_t = max((n * (a_t - mc_t)) / (b0 * (n + 1.0)), 0.0)
             q_t = min(q_t, stock)
@@ -221,6 +215,7 @@ def simulate_market(
         else:
             raise ValueError("Struktur pasar tidak dikenali")
 
+        stock_after = max(stock - q_t, 0.0)
         hotelling_price = mc_t + scarcity_rent
 
         rows.append(
@@ -232,89 +227,20 @@ def simulate_market(
                 "Harga_Benchmark_Hotelling": hotelling_price,
                 "Output": q_t,
                 "Harga": p_t,
-                "Stock_Tersisa": stock,
+                "Stock_Awal": stock,
+                "Stock_Tersisa": stock_after,
                 "Pendapatan": p_t * q_t,
                 "Rasio_Deplesi": depletion_ratio,
             }
         )
 
-        stock = max(stock - q_t, 0.0)
+        stock = stock_after
 
     return pd.DataFrame(rows)
 
 
-def structure_summary(df: pd.DataFrame) -> pd.Series:
-    first = df.iloc[0]
-    last = df.iloc[-1]
-    return pd.Series(
-        {
-            "Harga Awal": first["Harga"],
-            "Output Awal": first["Output"],
-            "Stock Awal": first["Stock_Tersisa"],
-            "Harga Akhir": last["Harga"],
-            "Output Akhir": last["Output"],
-            "Stock Akhir": last["Stock_Tersisa"],
-            "Pendapatan Total": df["Pendapatan"].sum(),
-        }
-    )
-
-
-def render_simulation(df: pd.DataFrame, title: str, note: str, show_firms: bool = False):
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Harga Awal", fmt_idr(df.iloc[0]["Harga"]))
-    c2.metric("Output Awal", fmt_num(df.iloc[0]["Output"], 2))
-    c3.metric("Stock Awal", fmt_num(df.iloc[0]["Stock_Tersisa"], 2))
-    c4.metric("Benchmark Hotelling", fmt_idr(df.iloc[0]["Harga_Benchmark_Hotelling"]))
-
-    st.write(note)
-
-    left, right = st.columns(2)
-
-    with left:
-        cols = [
-            "Periode",
-            "Permintaan_Intersep",
-            "MC_Efektif",
-            "Scarcity_Rent",
-            "Harga_Benchmark_Hotelling",
-            "Output",
-            "Harga",
-            "Stock_Tersisa",
-            "Pendapatan",
-        ]
-        st.dataframe(df[cols], use_container_width=True, height=400)
-
-    with right:
-        fig_p, ax_p = plt.subplots()
-        ax_p.plot(df["Periode"], df["Harga"], marker="o", label="Harga Pasar")
-        ax_p.plot(df["Periode"], df["Harga_Benchmark_Hotelling"], marker="o", label="Benchmark Hotelling")
-        ax_p.set_xlabel("Periode")
-        ax_p.set_ylabel("Harga")
-        ax_p.set_title(f"Jalur Harga — {title}")
-        ax_p.legend()
-        fig_p.tight_layout()
-        st.pyplot(fig_p, use_container_width=True)
-
-        fig_s, ax_s = plt.subplots()
-        ax_s.plot(df["Periode"], df["Stock_Tersisa"], marker="o")
-        ax_s.set_xlabel("Periode")
-        ax_s.set_ylabel("Stock Tersisa")
-        ax_s.set_title(f"Jalur Stock — {title}")
-        fig_s.tight_layout()
-        st.pyplot(fig_s, use_container_width=True)
-
-    if show_firms and "Jumlah_Perusahaan" in df.columns:
-        fig_f, ax_f = plt.subplots()
-        ax_f.plot(df["Periode"], df["Jumlah_Perusahaan"], marker="o")
-        ax_f.set_xlabel("Periode")
-        ax_f.set_ylabel("Jumlah Perusahaan")
-        ax_f.set_title("Sensitivitas Jumlah Perusahaan")
-        fig_f.tight_layout()
-        st.pyplot(fig_f, use_container_width=True)
-
-
 # ============================================================
-# Load data
+# Data
 # ============================================================
 data = load_historical_data()
 data["Perubahan_Harga_%"] = data["Harga_Emas"].pct_change() * 100
@@ -361,12 +287,10 @@ with st.sidebar.expander("Parameter Lanjutan", expanded=False):
     cost_growth = st.slider("Kenaikan biaya tahunan", 0.00, 0.20, 0.03, 0.005)
     tech_improvement = st.slider("Efisiensi teknologi", 0.00, 0.20, 0.01, 0.005)
     depletion_penalty = st.slider("Tekanan kelangkaan terhadap biaya", 0.00, 0.50, 0.10, 0.01)
+    green_tax = st.slider("Pajak karbon future ($)", 0.0, 100.0, 20.0, 1.0)
 
 st.sidebar.divider()
-st.sidebar.caption(
-    "Catatan: persaingan sempurna tidak memakai jumlah perusahaan. "
-    "Jumlah perusahaan baru berpengaruh di oligopoli."
-)
+st.sidebar.caption("Catatan: persaingan sempurna tidak memakai jumlah perusahaan. Jumlah perusahaan baru berpengaruh di oligopoli.")
 
 # ============================================================
 # CSS / Header / Cover
@@ -376,7 +300,7 @@ st.markdown(
 <style>
 .cover-wrapper{
     margin-top: 5px;
-    margin-bottom: 34px;
+    margin-bottom: 24px;
     padding-left: 20px;
     padding-right: 20px;
 }
@@ -404,15 +328,10 @@ st.markdown(
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 28px;
-    padding-top: 30px;
-    padding-bottom: 12px;
-    padding-left: 38px;
-    padding-right: 38px;
+    padding: 30px 38px 18px 38px;
     margin-top: 8px;
     backdrop-filter: blur(12px);
-    box-shadow:
-        0 0 0 1px rgba(255,255,255,0.02),
-        0 10px 35px rgba(0,0,0,0.35);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 10px 35px rgba(0,0,0,0.35);
     max-width: 1100px;
 }
 
@@ -447,9 +366,8 @@ st.markdown(
     border-radius: 24px;
 }
 
-.small-note {
-    font-size: 0.92rem;
-    opacity: 0.82;
+div[data-testid="stRadio"] > label {
+    font-weight: 700;
 }
 </style>
 """,
@@ -514,38 +432,81 @@ with col2:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.info(
-    "Dashboard ini menggabungkan data historis, kondisi pasar awal, simulasi harga sumber daya emas, "
-    "serta mekanisme pasar persaingan, monopoli, dan oligopoli."
+    "Dashboard ini merangkum data historis, simulasi harga sumber daya emas, dan analisis struktur pasar dengan tampilan yang lebih sederhana."
 )
 
 # ============================================================
-# Parameter dasar analisis
-# ============================================================
-st.subheader("Parameter Dasar Analisis (T=0)")
-p1, p2, p3, p4 = st.columns(4)
-p1.metric("Harga Pasar (P0)", fmt_idr(p0))
-p2.metric("Biaya Marginal (MC0)", fmt_idr(mc0))
-p3.metric("MUC Awal (λ0)", fmt_idr(lambda0))
-p4.metric("Suku Bunga (r)", f"{r:.2%}")
-# ============================================================
-# PARAMETER ANALISIS
+# Parameter dasar
 # ============================================================
 st.subheader("📍 Parameter Dasar Analisis (T=0)")
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Harga Pasar", fmt_idr(p0))
+c2.metric("Biaya Marginal", fmt_idr(mc0))
+c3.metric("MUC Awal", fmt_idr(lambda0))
+c4.metric("Suku Bunga", f"{r:.2%}")
 
-m1, m2, m3, m4 = st.columns(4)
+# ============================================================
+# Simulations
+# ============================================================
+sim_comp = simulate_market(
+    "Persaingan Sempurna",
+    p0=p0,
+    mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+    r=r,
+)
 
-m1.metric("Harga Pasar (P0)", fmt_idr(p0))
-m2.metric("Biaya Marginal (MC0)", fmt_idr(mc0))
-m3.metric("MUC Awal (λ0)", fmt_idr(lambda0))
-m4.metric("Suku Bunga (r)", f"{r:.2%}")
+sim_mono = simulate_market(
+    "Monopoli",
+    p0=p0,
+    mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+    r=r,
+)
 
-st.markdown("---")
+sim_oligo = simulate_market(
+    "Oligopoli",
+    p0=p0,
+    mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+    r=r,
+)
+
+sims = {
+    "Persaingan": sim_comp,
+    "Monopoli": sim_mono,
+    "Oligopoli": sim_oligo,
+}
 
 
 # ============================================================
-# MENU HORIZONTAL
+# Section menu
 # ============================================================
-menu = st.radio(
+section = st.radio(
     "",
     [
         "📊 Data & Cadangan",
@@ -559,275 +520,262 @@ menu = st.radio(
 
 st.markdown("---")
 
-
 # ============================================================
-# DATA & CADANGAN
+# 1. Data & Cadangan
 # ============================================================
-if menu == "📊 Data & Cadangan":
-
+if section == "📊 Data & Cadangan":
     st.header("Data Historis Produksi & Harga")
 
-    left, right = st.columns([1, 1.2])
+    left, right = st.columns([1, 1.1])
 
     with left:
         cols_show = ["Tahun", "Harga_Emas", "Stock_Emas"]
-
         if "Produksi_Emas" in data.columns:
             cols_show.append("Produksi_Emas")
 
-        st.dataframe(
-            data[cols_show],
-            use_container_width=True,
-            height=330,
-        )
+        st.dataframe(data[cols_show], use_container_width=True, height=360)
 
     with right:
-        fig1 = make_line_figure(
-            data["Tahun"],
-            data["Harga_Emas"],
-            "Tahun",
-            "Harga Emas",
-            "Tren Harga Historis"
-        )
-        st.pyplot(fig1, use_container_width=True)
+        fig_price = make_line_figure(data["Tahun"], data["Harga_Emas"], "Tahun", "Harga Emas", "Tren Harga Historis")
+        st.pyplot(fig_price, use_container_width=True)
 
-        st.info(
-            "Grafik menunjukkan perubahan harga emas dari waktu ke waktu "
-            "yang menjadi dasar simulasi harga dan kelangkaan."
-        )
-
+    st.caption("Harga emas naik saat kelangkaan dan ekspektasi pasar menguat, sedangkan stock bergerak turun karena ekstraksi berjalan terus.")
 
 # ============================================================
-# HOTELLING
+# 2. Hotelling
 # ============================================================
-elif menu == "📈 Analisis Hotelling":
-
+elif section == "📈 Analisis Hotelling":
     st.header("Model Optimasi Hotelling")
 
     years = []
     muc_values = []
-    projected_prices = []
+    prices = []
 
     for t in range(sim_periods + 1):
         year = 2025 + t
-
         muc_t = lambda0 * ((1 + r) ** t)
         price_t = p0 * ((1 + demand_growth) ** t)
 
         years.append(year)
         muc_values.append(muc_t)
-        projected_prices.append(price_t)
+        prices.append(price_t)
 
-    hotell_df = pd.DataFrame({
-        "Tahun": years,
-        "MUC ($)": muc_values,
-        "Harga ($)": projected_prices
-    })
+    hotell_df = pd.DataFrame(
+        {
+            "Tahun": years,
+            "MUC ($)": muc_values,
+            "Harga ($)": prices,
+        }
+    )
 
-    left, right = st.columns([1, 1.4])
+    left, right = st.columns([1, 1.2])
 
     with left:
-        st.subheader("Tabel Proyeksi Harga & MUC")
-        st.dataframe(hotell_df, use_container_width=True)
+        st.dataframe(hotell_df, use_container_width=True, height=360)
 
     with right:
         fig, ax = plt.subplots()
-
-        ax.plot(
-            years,
-            projected_prices,
-            marker="s",
-            label="Harga Proyeksi"
-        )
-
-        ax.plot(
-            years,
-            muc_values,
-            linestyle="--",
-            label="MUC"
-        )
-
+        ax.plot(years, prices, marker="s", label="Harga Proyeksi")
+        ax.plot(years, muc_values, linestyle="--", label="MUC")
         ax.set_title("Keseimbangan Nilai Intertemporal")
         ax.legend()
-
+        fig.tight_layout()
         st.pyplot(fig, use_container_width=True)
 
-        st.info(
-            "Kaidah Hotelling menunjukkan bahwa rente kelangkaan "
-            "akan meningkat mengikuti tingkat diskonto."
-        )
-
+    st.caption("Kalau tingkat diskonto naik, MUC naik lebih cepat. Dalam logika model, stok cenderung habis lebih cepat karena ekstraksi saat ini jadi lebih menarik.")
 
 # ============================================================
-# STRUKTUR PASAR
+# 3. Struktur Pasar
 # ============================================================
-elif menu == "🏛 Struktur Pasar":
-
+elif section == "🏛 Struktur Pasar":
     st.header("Analisis Struktur Pasar")
 
-    col1, col2, col3 = st.columns(3)
-
-    structures = {
-        "Persaingan": sim_comp,
-        "Monopoli": sim_mono,
-        "Oligopoli": sim_oligo
-    }
-
-    descriptions = {
-        "Persaingan":
-        "Harga mengikuti biaya marginal.",
-        "Monopoli":
-        "Harga lebih tinggi dan output lebih rendah.",
-        "Oligopoli":
-        "Harga berada di antara persaingan dan monopoli."
-    }
-
-    for idx, (name, sim_df) in enumerate(structures.items()):
-
-        current_col = [col1, col2, col3][idx]
-
-        with current_col:
-
-            st.subheader(name)
-
-            fig, ax = plt.subplots()
-
-            ax.plot(
-                sim_df["Periode"],
-                sim_df["Harga"],
-                marker="o"
-            )
-
-            ax.set_title(name)
-
-            st.pyplot(fig, use_container_width=True)
-
-            st.caption(descriptions[name])
-
-    st.info(
-        "Perbedaan struktur pasar memengaruhi harga, output, "
-        "dan kecepatan eksploitasi sumber daya emas."
-    )
-
-
-# ============================================================
-# SIMULASI STOK
-# ============================================================
-elif menu == "📦 Simulasi Stok":
-
-    st.header("Simulasi Deplesi Stock Cadangan")
-
-    depletion_years = []
-    remaining_stock = []
-
-    stock_now = reserve0
-
-    for t in range(sim_periods + 1):
-
-        year = 2025 + t
-
-        extraction = (
-            sim_comp.iloc[t]["Output"]
-            if t < len(sim_comp)
-            else 0
+    summary_rows = []
+    for name, df in sims.items():
+        summary_rows.append(
+            {
+                "Struktur": name,
+                "Harga Awal": df.iloc[0]["Harga"],
+                "Harga Akhir": df.iloc[-1]["Harga"],
+                "Output Awal": df.iloc[0]["Output"],
+                "Output Akhir": df.iloc[-1]["Output"],
+                "Stock Akhir": df.iloc[-1]["Stock_Tersisa"],
+                "Jangka Waktu Habis": depletion_label(df, sim_periods),
+            }
         )
 
-        stock_now -= extraction
+    summary_df = pd.DataFrame(summary_rows)
+    st.dataframe(summary_df, use_container_width=True, height=180)
 
-        depletion_years.append(year)
-        remaining_stock.append(max(stock_now, 0))
+    st.markdown("### Ringkasan per struktur")
+    a1, a2, a3 = st.columns(3)
 
-    depletion_df = pd.DataFrame({
-        "Tahun": depletion_years,
-        "Sisa Stock": remaining_stock
-    })
+    cards = [
+        ("Persaingan", sim_comp, "Harga mengikuti biaya marginal."),
+        ("Monopoli", sim_mono, "Output lebih kecil, harga lebih tinggi."),
+        ("Oligopoli", sim_oligo, f"Jumlah perusahaan = {n_firms}, hasil bergeser di tengah."),
+    ]
 
-    left, right = st.columns([1.4, 1])
+    for col, (name, df, note) in zip([a1, a2, a3], cards):
+        with col:
+            st.markdown(
+                f"""
+                <div style="padding:16px 18px;border-radius:18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);min-height:170px;">
+                    <h4 style="margin:0 0 12px 0;">{name}</h4>
+                    <div style="margin-bottom:8px;"><b>Harga akhir:</b> {fmt_idr(df.iloc[-1]["Harga"])}</div>
+                    <div style="margin-bottom:8px;"><b>Output akhir:</b> {fmt_num(df.iloc[-1]["Output"], 2)}</div>
+                    <div style="margin-bottom:8px;"><b>Stock akhir:</b> {fmt_num(df.iloc[-1]["Stock_Tersisa"], 2)}</div>
+                    <div style="opacity:0.8;"><b>Habis:</b> {depletion_label(df, sim_periods)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.caption(note)
+
+    chosen = st.selectbox("Lihat detail struktur", ["Persaingan", "Monopoli", "Oligopoli"])
+    chosen_df = sims[chosen]
+
+    d1, d2, d3, d4 = st.columns(4)
+    d1.metric("Harga Awal", fmt_idr(chosen_df.iloc[0]["Harga"]))
+    d2.metric("Harga Akhir", fmt_idr(chosen_df.iloc[-1]["Harga"]))
+    d3.metric("Output Akhir", fmt_num(chosen_df.iloc[-1]["Output"], 2))
+    d4.metric("Jangka Waktu Habis", depletion_label(chosen_df, sim_periods))
+
+    left, right = st.columns(2)
 
     with left:
-
-        fig = make_bar_figure(
-            depletion_years,
-            remaining_stock,
-            "Tahun",
-            "Sisa Stock",
-            "Proyeksi Sisa Cadangan"
-        )
-
-        st.pyplot(fig, use_container_width=True)
-
-        st.info(
-            "Grafik menunjukkan penurunan cadangan emas "
-            "akibat proses ekstraksi tiap periode."
+        st.dataframe(
+            chosen_df[
+                [
+                    "Periode",
+                    "Permintaan_Intersep",
+                    "MC_Efektif",
+                    "Scarcity_Rent",
+                    "Harga_Benchmark_Hotelling",
+                    "Output",
+                    "Harga",
+                    "Stock_Tersisa",
+                ]
+            ],
+            use_container_width=True,
+            height=360,
         )
 
     with right:
+        fig_p, ax_p = plt.subplots()
+        ax_p.plot(chosen_df["Periode"], chosen_df["Harga"], marker="o", label="Harga")
+        ax_p.plot(chosen_df["Periode"], chosen_df["Harga_Benchmark_Hotelling"], marker="o", label="Benchmark Hotelling")
+        ax_p.set_title(f"Jalur Harga — {chosen}")
+        ax_p.legend()
+        fig_p.tight_layout()
+        st.pyplot(fig_p, use_container_width=True)
 
-        st.subheader("Data Stock per Tahun")
+        fig_s, ax_s = plt.subplots()
+        ax_s.plot(chosen_df["Periode"], chosen_df["Stock_Tersisa"], marker="o")
+        ax_s.set_title(f"Jalur Stock — {chosen}")
+        fig_s.tight_layout()
+        st.pyplot(fig_s, use_container_width=True)
 
-        st.dataframe(
-            depletion_df,
-            use_container_width=True,
-            height=350
+    st.caption("Logika mikroekonomi: persaingan paling dekat ke biaya marginal, monopoli paling tinggi harga dan paling rendah output, oligopoli berada di tengah.")
+
+# ============================================================
+# 4. Simulasi Stok
+# ============================================================
+elif section == "📦 Simulasi Stok":
+    st.header("Simulasi Deplesi Stock Cadangan")
+
+    depletion_df = pd.DataFrame(
+        {
+            "Struktur": list(sims.keys()),
+            "Harga Akhir": [df.iloc[-1]["Harga"] for df in sims.values()],
+            "Output Akhir": [df.iloc[-1]["Output"] for df in sims.values()],
+            "Stock Akhir": [df.iloc[-1]["Stock_Tersisa"] for df in sims.values()],
+            "Jangka Waktu Habis": [depletion_label(df, sim_periods) for df in sims.values()],
+        }
+    )
+    st.dataframe(depletion_df, use_container_width=True, height=180)
+
+    left, right = st.columns([1.25, 1])
+
+    with left:
+        fig, ax = plt.subplots()
+        for name, df in sims.items():
+            ax.plot(df["Periode"], df["Stock_Tersisa"], marker="o", label=name)
+        ax.set_xlabel("Periode")
+        ax.set_ylabel("Stock Tersisa")
+        ax.set_title("Proyeksi Sisa Cadangan")
+        ax.legend()
+        fig.tight_layout()
+        st.pyplot(fig, use_container_width=True)
+
+    with right:
+        chart_df = pd.DataFrame(
+            {
+                "Struktur": list(sims.keys()),
+                "Tahun Habis": [
+                    int(depletion_period(df)) if depletion_period(df) is not None else sim_periods + 1
+                    for df in sims.values()
+                ],
+            }
         )
+        fig2 = make_bar_figure(chart_df["Struktur"], chart_df["Tahun Habis"], "Struktur", "Tahun", "Jangka Waktu Habis")
+        st.pyplot(fig2, use_container_width=True)
 
+    st.caption("Kalau diskonto dinaikkan, harga dan MUC ikut naik lebih cepat, sehingga stok cenderung lebih cepat habis.")
 
 # ============================================================
-# GREEN PARADOX
+# 5. Green Paradox
 # ============================================================
-elif menu == "🌿 Green Paradox":
-
+elif section == "🌿 Green Paradox":
     st.header("Analisis Green Paradox")
 
-    green_prices = []
-    green_stock = []
+    baseline = sim_comp.copy()
+    policy = sim_comp.copy()
 
-    stock_temp = reserve0
+    # Respons kebijakan: percepatan ekstraksi di awal, lalu tekanan setelahnya
+    boost = 1.0 + (green_tax / 100.0) * 0.6
+    cooling = 1.0 - (green_tax / 100.0) * 0.15
 
-    for t in range(sim_periods + 1):
+    policy["Output"] = [
+        min(baseline.iloc[t]["Output"] * (boost if t <= sim_periods // 2 else cooling), baseline.iloc[t]["Stock_Awal"])
+        for t in range(len(baseline))
+    ]
 
-        accelerated_extraction = (
-            sim_comp.iloc[t]["Output"] * 1.15
-        )
+    stock = reserve0
+    policy_stock = []
+    for t in range(len(policy)):
+        stock = max(stock - policy.iloc[t]["Output"], 0.0)
+        policy_stock.append(stock)
+    policy["Stock_Tersisa"] = policy_stock
 
-        stock_temp -= accelerated_extraction
+    left, right = st.columns([1.05, 1])
 
-        green_prices.append(
-            sim_comp.iloc[t]["Harga_Benchmark_Hotelling"]
-        )
+    with left:
+        fig, ax = plt.subplots()
+        ax.plot(baseline["Periode"], baseline["Output"], marker="o", label="Baseline")
+        ax.plot(policy["Periode"], policy["Output"], marker="o", label="Dengan Kebijakan")
+        ax.set_title("Respons Ekstraksi terhadap Sinyal Pajak Karbon")
+        ax.legend()
+        fig.tight_layout()
+        st.pyplot(fig, use_container_width=True)
 
-        green_stock.append(max(stock_temp, 0))
+    with right:
+        fig2, ax2 = plt.subplots()
+        ax2.plot(baseline["Periode"], baseline["Stock_Tersisa"], marker="o", label="Baseline")
+        ax2.plot(policy["Periode"], policy["Stock_Tersisa"], marker="o", label="Dengan Kebijakan")
+        ax2.set_title("Dampak terhadap Stock")
+        ax2.legend()
+        fig2.tight_layout()
+        st.pyplot(fig2, use_container_width=True)
 
-    fig, ax1 = plt.subplots()
+    gp1, gp2, gp3 = st.columns(3)
+    gp1.metric("Output awal baseline", fmt_num(baseline.iloc[0]["Output"], 2))
+    gp2.metric("Output awal kebijakan", fmt_num(policy.iloc[0]["Output"], 2))
+    gp3.metric("Stock akhir kebijakan", fmt_num(policy.iloc[-1]["Stock_Tersisa"], 2))
 
-    ax1.bar(
-        range(len(green_stock)),
-        green_stock,
-        alpha=0.5,
-        label="Deplesi Stock"
+    st.caption(
+        "Analisis green paradox: saat pasar mengantisipasi pajak karbon di masa depan, produsen cenderung mempercepat ekstraksi sekarang."
     )
-
-    ax2 = ax1.twinx()
-
-    ax2.plot(
-        range(len(green_prices)),
-        green_prices,
-        marker="o",
-        label="Harga"
-    )
-
-    ax1.set_title("Efek Green Paradox")
-
-    st.pyplot(fig, use_container_width=True)
-
-    st.info(
-        "Green Paradox terjadi ketika ancaman kebijakan lingkungan "
-        "justru mempercepat ekstraksi sumber daya."
-    )
-
 
 st.markdown("---")
-
-st.caption(
-    "Dashboard Analisis Ekonomi SDA | PBL 3 | FEB UNISBA | 2026"
-)
+st.caption("Dashboard Analisis Ekonomi SDA | PBL 3 | FEB UNISBA | 2026")
