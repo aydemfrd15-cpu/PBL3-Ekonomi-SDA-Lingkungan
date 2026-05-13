@@ -369,6 +369,61 @@ st.markdown(
 div[data-testid="stRadio"] > label {
     font-weight: 700;
 }
+
+/* =========================================================
+MENU TAB HORIZONTAL
+========================================================= */
+
+div[role="radiogroup"]{
+    display:flex;
+    justify-content:flex-start;
+    gap:14px;
+    background:rgba(255,255,255,0.03);
+    padding:12px 14px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+    margin-top:10px;
+    margin-bottom:18px;
+    overflow-x:auto;
+}
+
+div[role="radiogroup"] label{
+    background:rgba(255,255,255,0.03);
+    padding:10px 18px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.06);
+    transition:all 0.25s ease;
+    font-weight:600;
+}
+
+div[role="radiogroup"] label:hover{
+    background:rgba(244,197,66,0.12);
+    border:1px solid rgba(244,197,66,0.35);
+    transform:translateY(-2px);
+}
+
+div[role="radiogroup"] label p{
+    font-size:15px;
+}
+
+/* tab aktif */
+
+div[role="radiogroup"] input:checked + div{
+    color:#F4C542 !important;
+    font-weight:800 !important;
+}
+
+div[role="radiogroup"] label:has(input:checked){
+    background:linear-gradient(
+        135deg,
+        rgba(244,197,66,0.18),
+        rgba(244,197,66,0.05)
+    );
+    border:1px solid rgba(244,197,66,0.45);
+    box-shadow:0 0 18px rgba(244,197,66,0.10);
+}
+
 </style>
 """,
     unsafe_allow_html=True,
