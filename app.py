@@ -57,6 +57,17 @@ def make_line_figure(x, y, x_label, y_label, title=None):
     return fig
 
 
+def make_bar_figure(x, y, x_label, y_label, title=None):
+    fig, ax = plt.subplots()
+    ax.bar(x, y)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    return fig
+
+
 def reserve_status(price: float, mc: float) -> str:
     if price > mc:
         return "Reserve makin layak"
@@ -75,17 +86,8 @@ def load_historical_data() -> pd.DataFrame:
         {
             "Tahun": list(range(2014, 2025)),
             "Harga_Emas": [
-                1264.99,
-                1215.69,
-                1249.03,
-                1293.40,
-                1309.30,
-                1392.55,
-                1771.22,
-                1799.34,
-                1800.10,
-                1930.24,
-                2354.35,
+                1264.99, 1215.69, 1249.03, 1293.40, 1309.30,
+                1392.55, 1771.22, 1799.34, 1800.10, 1930.24, 2354.35
             ],
             "Produksi_Emas": [
                 2342, 2210, 2207, 1967, 1957,
@@ -96,17 +98,8 @@ def load_historical_data() -> pd.DataFrame:
                 1997.9, 1569.0, 2242.6, 2540.8, 2279.5, 3955.0
             ],
             "Stock_Emas": [
-                805000.0,
-                804950.0,
-                804890.0,
-                804810.0,
-                804720.0,
-                804620.0,
-                804500.0,
-                804340.0,
-                804150.0,
-                803880.0,
-                803520.0,
+                805000.0, 804950.0, 804890.0, 804810.0, 804720.0,
+                804620.0, 804500.0, 804340.0, 804150.0, 803880.0, 803520.0
             ],
         }
     )
@@ -148,10 +141,9 @@ def load_historical_data() -> pd.DataFrame:
     df = df.dropna(subset=["Tahun", "Harga_Emas"]).copy()
     df["Tahun"] = df["Tahun"].astype(int)
 
-    # Kalau stock belum ada, buat proxy sederhana supaya grafik tetap ada
     if "Stock_Emas" not in df.columns:
         start_stock = 805000.0
-        end_stock = 803500.0
+        end_stock = 803520.0
         if len(df) == 1:
             df["Stock_Emas"] = [start_stock]
         else:
@@ -170,9 +162,10 @@ def load_historical_data() -> pd.DataFrame:
 
 def simulate_market(
     structure: str,
-    a0: float,
-    b0: float,
+    p0: float,
     mc0: float,
+    lambda0: float,
+    b0: float,
     reserve0: float,
     periods: int,
     n_firms: int,
@@ -180,12 +173,14 @@ def simulate_market(
     cost_growth: float,
     tech_improvement: float,
     depletion_penalty: float,
+    r: float,
 ):
     """
-    Simulasi dibuat agar:
-    - angka berubah saat slider berubah
-    - persaingan, monopoli, oligopoli punya rumus berbeda
-    - stok berkurang dari waktu ke waktu
+    Simulasi yang dibuat supaya:
+    - angka berubah saat slider diubah
+    - persaingan, monopoli, oligopoli punya rumus beda
+    - oligopoli sensitif terhadap jumlah perusahaan
+    - ada benchmark Hotelling untuk pembanding harga
     """
     rows = []
     stock = max(reserve0, 1.0)
@@ -194,22 +189,23 @@ def simulate_market(
         depletion_ratio = 1.0 - (stock / reserve0 if reserve0 > 0 else 0.0)
         depletion_ratio = max(0.0, min(1.0, depletion_ratio))
 
-        # Demand makin tinggi saat kelangkaan naik
-        a_t = a0 * ((1.0 + demand_growth) ** t) * (1.0 + 0.07 * depletion_ratio)
+        scarcity_rent = lambda0 * ((1.0 + r) ** t) * (1.0 + 0.35 * depletion_ratio)
 
-        # Biaya naik, teknologi menahan kenaikan itu
+        # Intersep permintaan bergerak bersama kondisi kelangkaan dan ekspektasi harga
+        a_t = p0 * ((1.0 + demand_growth) ** t) + 0.20 * scarcity_rent
+
+        # Biaya bergerak naik, teknologi menahan kenaikannya
         effective_cost_growth = max(cost_growth - tech_improvement, -0.95)
         mc_t = mc0 * ((1.0 + effective_cost_growth) ** t) * (1.0 + depletion_penalty * depletion_ratio)
 
-        # Rumus struktur pasar
         if structure == "Persaingan Sempurna":
-            # P = MC; Q = (a - MC)/b
+            # P = MC, Q = (a - MC)/b
             q_t = max((a_t - mc_t) / b0, 0.0)
             q_t = min(q_t, stock)
             p_t = max(mc_t, a_t - b0 * q_t)
 
         elif structure == "Monopoli":
-            # Q = (a - MC)/(2b); P = a - bQ
+            # Q = (a - MC)/(2b), P = a - bQ
             q_t = max((a_t - mc_t) / (2.0 * b0), 0.0)
             q_t = min(q_t, stock)
             p_t = max(a_t - b0 * q_t, mc_t)
@@ -225,11 +221,15 @@ def simulate_market(
         else:
             raise ValueError("Struktur pasar tidak dikenali")
 
+        hotelling_price = mc_t + scarcity_rent
+
         rows.append(
             {
                 "Periode": t,
                 "Permintaan_Intersep": a_t,
                 "MC_Efektif": mc_t,
+                "Scarcity_Rent": scarcity_rent,
+                "Harga_Benchmark_Hotelling": hotelling_price,
                 "Output": q_t,
                 "Harga": p_t,
                 "Stock_Tersisa": stock,
@@ -259,8 +259,62 @@ def structure_summary(df: pd.DataFrame) -> pd.Series:
     )
 
 
+def render_simulation(df: pd.DataFrame, title: str, note: str, show_firms: bool = False):
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Harga Awal", fmt_idr(df.iloc[0]["Harga"]))
+    c2.metric("Output Awal", fmt_num(df.iloc[0]["Output"], 2))
+    c3.metric("Stock Awal", fmt_num(df.iloc[0]["Stock_Tersisa"], 2))
+    c4.metric("Benchmark Hotelling", fmt_idr(df.iloc[0]["Harga_Benchmark_Hotelling"]))
+
+    st.write(note)
+
+    left, right = st.columns(2)
+
+    with left:
+        cols = [
+            "Periode",
+            "Permintaan_Intersep",
+            "MC_Efektif",
+            "Scarcity_Rent",
+            "Harga_Benchmark_Hotelling",
+            "Output",
+            "Harga",
+            "Stock_Tersisa",
+            "Pendapatan",
+        ]
+        st.dataframe(df[cols], use_container_width=True, height=400)
+
+    with right:
+        fig_p, ax_p = plt.subplots()
+        ax_p.plot(df["Periode"], df["Harga"], marker="o", label="Harga Pasar")
+        ax_p.plot(df["Periode"], df["Harga_Benchmark_Hotelling"], marker="o", label="Benchmark Hotelling")
+        ax_p.set_xlabel("Periode")
+        ax_p.set_ylabel("Harga")
+        ax_p.set_title(f"Jalur Harga — {title}")
+        ax_p.legend()
+        fig_p.tight_layout()
+        st.pyplot(fig_p, use_container_width=True)
+
+        fig_s, ax_s = plt.subplots()
+        ax_s.plot(df["Periode"], df["Stock_Tersisa"], marker="o")
+        ax_s.set_xlabel("Periode")
+        ax_s.set_ylabel("Stock Tersisa")
+        ax_s.set_title(f"Jalur Stock — {title}")
+        fig_s.tight_layout()
+        st.pyplot(fig_s, use_container_width=True)
+
+    if show_firms and "Jumlah_Perusahaan" in df.columns:
+        fig_f, ax_f = plt.subplots()
+        ax_f.plot(df["Periode"], df["Jumlah_Perusahaan"], marker="o")
+        ax_f.set_xlabel("Periode")
+        ax_f.set_ylabel("Jumlah Perusahaan")
+        ax_f.set_title("Sensitivitas Jumlah Perusahaan")
+        fig_f.tight_layout()
+        st.pyplot(fig_f, use_container_width=True)
+
+
 # ============================================================
-# Data
+# Load data
 # ============================================================
 data = load_historical_data()
 data["Perubahan_Harga_%"] = data["Harga_Emas"].pct_change() * 100
@@ -286,40 +340,32 @@ avg_price_growth = (
     else 0.0
 )
 
-# Parameter dasar dari laporan tugas
-mc_default = 1732.53
-reserve_default = 805000.0
-a_default = float(data["Harga_Emas"].max())
-b_default = 0.788
-n_default = 4
-
 # ============================================================
 # Sidebar controls
 # ============================================================
 st.sidebar.title("Kontrol Simulasi")
 st.sidebar.caption("Atur parameter supaya harga, output, dan stok benar-benar bergerak.")
 
-structure_mode = st.sidebar.radio(
-    "Struktur pasar yang ditampilkan",
-    ["Persaingan Sempurna", "Monopoli", "Oligopoli"],
-    index=0,
-)
+st.sidebar.subheader("Parameter Pasar")
+p0 = st.sidebar.slider("Harga Emas Antam (P0)", 1000.0, 6000.0, float(latest_price), 1.0)
+mc0 = st.sidebar.slider("Biaya Marginal Awal (MC0)", 500.0, 5000.0, 1732.53, 10.0)
+lambda0 = st.sidebar.slider("MUC Awal (λ0)", 1.0, 2000.0, max(float(latest_price - 1732.53), 50.0), 1.0)
+r = st.sidebar.slider("Tingkat Diskonto (r)", 0.00, 0.20, 0.05, 0.005)
+b0 = st.sidebar.slider("Koefisien Permintaan (b)", 0.100, 3.000, 0.788, 0.001)
+n_firms = st.sidebar.slider("Jumlah Perusahaan Oligopoli", 2, 20, 4, 1)
 
-sim_periods = st.sidebar.slider("Horizon simulasi (periode)", 3, 20, 10, 1)
-reserve0 = st.sidebar.slider("Cadangan awal (kg)", 100000.0, 2000000.0, reserve_default, 1000.0)
-a0 = st.sidebar.slider("Intersep permintaan (a)", 1000.0, 6000.0, a_default, 1.0)
-b0 = st.sidebar.slider("Koefisien permintaan (b)", 0.100, 3.000, b_default, 0.001)
-mc0 = st.sidebar.slider("Biaya ekstraksi awal (MC)", 500.0, 5000.0, mc_default, 10.0)
-n_firms = st.sidebar.slider("Jumlah perusahaan oligopoli", 2, 20, n_default, 1)
-demand_growth = st.sidebar.slider("Pertumbuhan permintaan tahunan", 0.00, 0.20, 0.04, 0.005)
-cost_growth = st.sidebar.slider("Kenaikan biaya tahunan", 0.00, 0.20, 0.03, 0.005)
-tech_improvement = st.sidebar.slider("Efisiensi teknologi", 0.00, 0.20, 0.01, 0.005)
-depletion_penalty = st.sidebar.slider("Tekanan kelangkaan terhadap biaya", 0.00, 0.50, 0.10, 0.01)
+with st.sidebar.expander("Parameter Lanjutan", expanded=False):
+    sim_periods = st.slider("Horizon simulasi (periode)", 3, 20, 10, 1)
+    reserve0 = st.slider("Cadangan awal (kg)", 100000.0, 2000000.0, 805000.0, 1000.0)
+    demand_growth = st.slider("Pertumbuhan permintaan tahunan", 0.00, 0.20, 0.04, 0.005)
+    cost_growth = st.slider("Kenaikan biaya tahunan", 0.00, 0.20, 0.03, 0.005)
+    tech_improvement = st.slider("Efisiensi teknologi", 0.00, 0.20, 0.01, 0.005)
+    depletion_penalty = st.slider("Tekanan kelangkaan terhadap biaya", 0.00, 0.50, 0.10, 0.01)
 
 st.sidebar.divider()
 st.sidebar.caption(
-    "Catatan: pada persaingan sempurna harga mengikuti MC. "
-    "Pada monopoli output lebih kecil. Pada oligopoli, jumlah perusahaan memengaruhi hasil."
+    "Catatan: persaingan sempurna tidak memakai jumlah perusahaan. "
+    "Jumlah perusahaan baru berpengaruh di oligopoli."
 )
 
 # ============================================================
@@ -468,9 +514,19 @@ with col2:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.info(
-    "Dashboard ini menggabungkan data historis, kondisi pasar awal, simulasi harga sumber daya, "
+    "Dashboard ini menggabungkan data historis, kondisi pasar awal, simulasi harga sumber daya emas, "
     "serta mekanisme pasar persaingan, monopoli, dan oligopoli."
 )
+
+# ============================================================
+# Parameter dasar analisis
+# ============================================================
+st.subheader("Parameter Dasar Analisis (T=0)")
+p1, p2, p3, p4 = st.columns(4)
+p1.metric("Harga Pasar (P0)", fmt_idr(p0))
+p2.metric("Biaya Marginal (MC0)", fmt_idr(mc0))
+p3.metric("MUC Awal (λ0)", fmt_idr(lambda0))
+p4.metric("Suku Bunga (r)", f"{r:.2%}")
 
 # ============================================================
 # 1. Data kondisi pasar
@@ -481,7 +537,7 @@ k1, k2, k3, k4 = st.columns(4)
 k1.metric("Harga Emas Saat Ini", fmt_idr(latest_price), f"{price_yoy:+.2f}% yoy")
 k2.metric("Stock Emas Saat Ini", fmt_num(latest_stock, 3), f"{stock_yoy:+.2f}% yoy")
 k3.metric("Rata-rata Pertumbuhan Harga", f"{avg_price_growth:.2f}%")
-k4.metric("Status Pasar", reserve_status(latest_price, mc_default))
+k4.metric("Status Pasar", reserve_status(latest_price, mc0))
 
 st.write(
     "Harga yang naik sementara stock menurun menunjukkan tekanan kelangkaan. "
@@ -550,7 +606,7 @@ st.write(
 )
 
 # ============================================================
-# 5. Tabel perubahan stock
+# 5. Tabel perubahan stock emas
 # ============================================================
 st.subheader("5. Tabel Perhitungan Perubahan Stock Emas")
 stock_change_table = data[["Tahun", "Stock_Emas", "Perubahan_Stock", "Perubahan_Stock_%"]].copy()
@@ -570,9 +626,10 @@ st.write(
 
 sim_comp = simulate_market(
     "Persaingan Sempurna",
-    a0=a0,
-    b0=b0,
+    p0=p0,
     mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
     reserve0=reserve0,
     periods=sim_periods,
     n_firms=n_firms,
@@ -580,13 +637,15 @@ sim_comp = simulate_market(
     cost_growth=cost_growth,
     tech_improvement=tech_improvement,
     depletion_penalty=depletion_penalty,
+    r=r,
 )
 
 sim_mono = simulate_market(
     "Monopoli",
-    a0=a0,
-    b0=b0,
+    p0=p0,
     mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
     reserve0=reserve0,
     periods=sim_periods,
     n_firms=n_firms,
@@ -594,13 +653,15 @@ sim_mono = simulate_market(
     cost_growth=cost_growth,
     tech_improvement=tech_improvement,
     depletion_penalty=depletion_penalty,
+    r=r,
 )
 
 sim_oligo = simulate_market(
     "Oligopoli",
-    a0=a0,
-    b0=b0,
+    p0=p0,
     mc0=mc0,
+    lambda0=lambda0,
+    b0=b0,
     reserve0=reserve0,
     periods=sim_periods,
     n_firms=n_firms,
@@ -608,65 +669,19 @@ sim_oligo = simulate_market(
     cost_growth=cost_growth,
     tech_improvement=tech_improvement,
     depletion_penalty=depletion_penalty,
+    r=r,
 )
 
 sim_tabs = st.tabs(["Persaingan", "Monopoli", "Oligopoli", "Perbandingan"])
 
-def render_simulation(df: pd.DataFrame, title: str, note: str):
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Harga Awal", fmt_idr(df.iloc[0]["Harga"]))
-    c2.metric("Output Awal", fmt_num(df.iloc[0]["Output"], 2))
-    c3.metric("Stock Awal", fmt_num(df.iloc[0]["Stock_Tersisa"], 2))
-
-    st.write(note)
-
-    left, right = st.columns(2)
-    with left:
-        st.dataframe(
-            df[
-                [
-                    "Periode",
-                    "Permintaan_Intersep",
-                    "MC_Efektif",
-                    "Output",
-                    "Harga",
-                    "Stock_Tersisa",
-                    "Pendapatan",
-                    "Rasio_Deplesi",
-                ]
-            ],
-            use_container_width=True,
-            height=390,
-        )
-
-    with right:
-        fig_p, ax_p = plt.subplots()
-        ax_p.plot(df["Periode"], df["Harga"], marker="o")
-        ax_p.set_xlabel("Periode")
-        ax_p.set_ylabel("Harga")
-        ax_p.set_title(f"Jalur Harga — {title}")
-        fig_p.tight_layout()
-        st.pyplot(fig_p, use_container_width=True)
-
-        fig_s, ax_s = plt.subplots()
-        ax_s.plot(df["Periode"], df["Stock_Tersisa"], marker="o")
-        ax_s.set_xlabel("Periode")
-        ax_s.set_ylabel("Stock Tersisa")
-        ax_s.set_title(f"Jalur Stock — {title}")
-        fig_s.tight_layout()
-        st.pyplot(fig_s, use_container_width=True)
-
 with sim_tabs[0]:
     st.markdown("### Mekanisme Pasar Persaingan")
     st.write(
-        "Dalam persaingan sempurna, perusahaan adalah price taker. Harga cenderung mengikuti biaya marjinal, "
-        "dan output menyesuaikan sampai pasar mencapai keseimbangan."
+        "Dalam persaingan sempurna, perusahaan adalah price taker. "
+        "Harga cenderung mengikuti biaya marjinal, dan output menyesuaikan sampai pasar mencapai keseimbangan."
     )
     st.markdown(
-        """
-        **Logika mikroekonomi:**  
-        \( P = MC \) sehingga output bergerak mengikuti titik pertemuan permintaan dan biaya marjinal.
-        """
+        "**Logika mikroekonomi:** \( P = MC \). Harga bergerak mengikuti titik pertemuan permintaan dan biaya marjinal."
     )
     render_simulation(
         sim_comp,
@@ -677,14 +692,11 @@ with sim_tabs[0]:
 with sim_tabs[1]:
     st.markdown("### Mekanisme Pasar Monopoli")
     st.write(
-        "Dalam monopoli, satu produsen menguasai pasar. Output cenderung lebih kecil dibanding persaingan, "
-        "sedangkan harga lebih tinggi karena produsen punya kekuatan pasar."
+        "Dalam monopoli, satu produsen menguasai pasar. "
+        "Output cenderung lebih kecil dibanding persaingan, sedangkan harga lebih tinggi karena produsen punya kekuatan pasar."
     )
     st.markdown(
-        """
-        **Logika mikroekonomi:**  
-        \( MR = MC \), lalu \( P = a - bQ \). Karena kurva permintaan turun, monopoli memproduksi lebih sedikit dan menjual lebih mahal.
-        """
+        "**Logika mikroekonomi:** \( MR = MC \), lalu \( P = a - bQ \). Karena kurva permintaan turun, monopoli memproduksi lebih sedikit dan menjual lebih mahal."
     )
     render_simulation(
         sim_mono,
@@ -695,15 +707,12 @@ with sim_tabs[1]:
 with sim_tabs[2]:
     st.markdown("### Mekanisme Pasar Oligopoli")
     st.write(
-        "Dalam oligopoli, beberapa perusahaan saling bereaksi satu sama lain. Semakin banyak perusahaan, "
-        "hasilnya makin mendekati persaingan sempurna."
+        "Dalam oligopoli, beberapa perusahaan saling bereaksi satu sama lain. "
+        "Semakin banyak perusahaan, hasilnya makin mendekati persaingan sempurna."
     )
     st.markdown(
-        """
-        **Logika mikroekonomi:**  
-        Model Cournot dipakai agar jumlah perusahaan benar-benar memengaruhi output.  
-        Makin banyak perusahaan, output total naik dan harga turun.
-        """
+        "**Logika mikroekonomi:** model Cournot dipakai agar jumlah perusahaan benar-benar memengaruhi output. "
+        "Makin banyak perusahaan, output total naik dan harga turun."
     )
     render_simulation(
         sim_oligo,
@@ -721,6 +730,28 @@ with sim_tabs[3]:
         }
     )
     st.dataframe(summary_df, use_container_width=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        comp_price = [sim_comp.iloc[0]["Harga"], sim_mono.iloc[0]["Harga"], sim_oligo.iloc[0]["Harga"]]
+        fig_price = make_bar_figure(
+            ["Persaingan", "Monopoli", "Oligopoli"],
+            comp_price,
+            "Struktur Pasar",
+            "Harga Awal",
+            "Harga Awal per Struktur",
+        )
+        st.pyplot(fig_price, use_container_width=True)
+    with c2:
+        comp_output = [sim_comp.iloc[0]["Output"], sim_mono.iloc[0]["Output"], sim_oligo.iloc[0]["Output"]]
+        fig_output = make_bar_figure(
+            ["Persaingan", "Monopoli", "Oligopoli"],
+            comp_output,
+            "Struktur Pasar",
+            "Output Awal",
+            "Output Awal per Struktur",
+        )
+        st.pyplot(fig_output, use_container_width=True)
 
     st.write(
         "Secara mikroekonomi, urutannya biasanya: harga persaingan paling rendah, monopoli paling tinggi, "
