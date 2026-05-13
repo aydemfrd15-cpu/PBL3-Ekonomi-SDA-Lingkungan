@@ -1,11 +1,9 @@
-import streamlit as st
-import pandas as pd
+import os
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-plt.style.use("dark_background")
-plt.rcParams["figure.figsize"] = (8, 4)
-plt.rcParams["axes.edgecolor"] = "white"
-plt.rcParams["axes.linewidth"] = 1.2
-plt.rcParams["font.size"] = 10
+import pandas as pd
+import streamlit as st
 
 st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
@@ -13,14 +11,19 @@ st.set_page_config(
     layout="wide",
 )
 
-# -----------------------------
-# Helper functions
-# -----------------------------
+plt.style.use("dark_background")
+plt.rcParams["figure.figsize"] = (8, 4)
+plt.rcParams["axes.edgecolor"] = "white"
+plt.rcParams["axes.linewidth"] = 1.2
+plt.rcParams["font.size"] = 10
+
+
 def fmt_idr(value: float) -> str:
     try:
         return f"Rp {value:,.2f}"
     except Exception:
         return str(value)
+
 
 def fmt_num(value: float, digits: int = 2) -> str:
     try:
@@ -28,45 +31,183 @@ def fmt_num(value: float, digits: int = 2) -> str:
     except Exception:
         return str(value)
 
-# -----------------------------
-# Load data
-# -----------------------------
-try:
-    data = pd.read_csv("data_emas.csv")
-except Exception as e:
-    st.error(f"Gagal membaca data_emas.csv: {e}")
-    st.stop()
 
-data.columns = [c.strip() for c in data.columns]
+def safe_float(x, default=0.0):
+    try:
+        return float(x)
+    except Exception:
+        return default
 
-# Be tolerant to column naming variations
-rename_map = {}
-for col in data.columns:
-    if col.lower() == "tahun":
-        rename_map[col] = "Tahun"
-    elif col.lower() in ("harga_emas", "harga emas"):
-        rename_map[col] = "Harga_Emas"
-    elif col.lower() in ("stock_emas", "stok_emas", "stock emas", "stok emas"):
-        rename_map[col] = "Stock_Emas"
-data = data.rename(columns=rename_map)
 
-required_cols = {"Tahun", "Harga_Emas", "Stock_Emas"}
-missing = required_cols - set(data.columns)
-if missing:
-    st.error(
-        "Kolom wajib pada data_emas.csv belum lengkap. "
-        f"Yang masih kurang: {', '.join(sorted(missing))}"
+def load_historical_data() -> pd.DataFrame:
+    fallback = pd.DataFrame(
+        {
+            "Tahun": list(range(2014, 2025)),
+            "Harga_Emas": [
+                1264.99,
+                1215.69,
+                1249.03,
+                1293.40,
+                1309.30,
+                1392.55,
+                1771.22,
+                1799.34,
+                1800.10,
+                1930.24,
+                2354.35,
+            ],
+            "Stock_Emas": [
+                805000.00,
+                804900.00,
+                804750.00,
+                804600.00,
+                804450.00,
+                804300.00,
+                804120.00,
+                803950.00,
+                803780.00,
+                803520.00,
+                803200.00,
+            ],
+        }
     )
-    st.stop()
 
-for col in ["Tahun", "Harga_Emas", "Stock_Emas"]:
-    data[col] = pd.to_numeric(data[col], errors="coerce")
+    csv_path = Path("data_emas.csv")
+    if not csv_path.exists():
+        return fallback
 
-data = data.dropna(subset=["Tahun", "Harga_Emas", "Stock_Emas"]).copy()
-data["Tahun"] = data["Tahun"].astype(int)
-data = data.sort_values("Tahun").reset_index(drop=True)
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception:
+        return fallback
 
-# Derived historical columns
+    df.columns = [c.strip() for c in df.columns]
+    rename_map = {}
+    for col in df.columns:
+        low = col.lower().strip()
+        if low == "tahun":
+            rename_map[col] = "Tahun"
+        elif low in {"harga_emas", "harga emas", "harga"}:
+            rename_map[col] = "Harga_Emas"
+        elif low in {"stock_emas", "stok_emas", "stock emas", "stok emas", "stock"}:
+            rename_map[col] = "Stock_Emas"
+    df = df.rename(columns=rename_map)
+
+    required_cols = {"Tahun", "Harga_Emas", "Stock_Emas"}
+    if not required_cols.issubset(df.columns):
+        st.warning("data_emas.csv belum lengkap. Fallback data dipakai.")
+        return fallback
+
+    for col in ["Tahun", "Harga_Emas", "Stock_Emas"]:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df = df.dropna(subset=["Tahun", "Harga_Emas", "Stock_Emas"]).copy()
+    if df.empty:
+        return fallback
+
+    df["Tahun"] = df["Tahun"].astype(int)
+    return df.sort_values("Tahun").reset_index(drop=True)
+
+
+def make_line_figure(x, y, x_label, y_label, title=None):
+    fig, ax = plt.subplots()
+    ax.plot(x, y, marker="o")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    return fig
+
+
+def simulate_market(
+    structure: str,
+    a0: float,
+    b0: float,
+    mc0: float,
+    reserve0: float,
+    periods: int,
+    n_firms: int = 4,
+    demand_growth: float = 0.0,
+    cost_growth: float = 0.0,
+    tech_improvement: float = 0.0,
+    depletion_penalty: float = 0.0,
+):
+    rows = []
+    stock = max(reserve0, 1.0)
+
+    for t in range(periods + 1):
+        depletion_ratio = 1.0 - (stock / reserve0 if reserve0 > 0 else 0.0)
+        depletion_ratio = max(0.0, min(1.0, depletion_ratio))
+
+        a_t = a0 * ((1.0 + demand_growth) ** t) * (1.0 + 0.06 * depletion_ratio)
+        effective_cost_growth = max(cost_growth - tech_improvement, -0.95)
+        mc_t = mc0 * ((1.0 + effective_cost_growth) ** t) * (1.0 + depletion_penalty * depletion_ratio)
+
+        if structure == "Persaingan Sempurna":
+            q_t = max((a_t - mc_t) / b0, 0.0)
+            q_t = min(q_t, stock)
+            p_t = max(mc_t, a_t - b0 * q_t)
+
+        elif structure == "Monopoli":
+            q_t = max((a_t - mc_t) / (2.0 * b0), 0.0)
+            q_t = min(q_t, stock)
+            p_t = max(a_t - b0 * q_t, mc_t)
+
+        elif structure == "Oligopoli":
+            n = max(int(n_firms), 2)
+            q_t = max((n * (a_t - mc_t)) / (b0 * (n + 1.0)), 0.0)
+            q_t = min(q_t, stock)
+            p_t = max(a_t - b0 * q_t, mc_t)
+
+        else:
+            raise ValueError(f"Unknown structure: {structure}")
+
+        rows.append(
+            {
+                "Periode": t,
+                "Permintaan_Intersep": a_t,
+                "MC_Efektif": mc_t,
+                "Output": q_t,
+                "Harga": p_t,
+                "Stock_Tersisa": stock,
+                "Pendapatan": p_t * q_t,
+                "Rasio_Deplesi": depletion_ratio,
+            }
+        )
+
+        stock = max(stock - q_t, 0.0)
+
+    return pd.DataFrame(rows)
+
+
+def structure_summary(df: pd.DataFrame) -> pd.Series:
+    first = df.iloc[0]
+    last = df.iloc[-1]
+    return pd.Series(
+        {
+            "Harga Awal": first["Harga"],
+            "Output Awal": first["Output"],
+            "Stock Awal": first["Stock_Tersisa"],
+            "Harga Akhir": last["Harga"],
+            "Output Akhir": last["Output"],
+            "Stock Akhir": last["Stock_Tersisa"],
+            "Pendapatan Total": df["Pendapatan"].sum(),
+        }
+    )
+
+
+def reserve_status(price: float, mc: float) -> str:
+    if price > mc:
+        return "Reserve makin layak"
+    if price < mc:
+        return "Masih resource"
+    return "Titik impas"
+
+
+# ============================================================
+# Load data
+# ============================================================
+data = load_historical_data()
 data["Perubahan_Harga_%"] = data["Harga_Emas"].pct_change() * 100
 data["Perubahan_Stock"] = data["Stock_Emas"].diff()
 data["Perubahan_Stock_%"] = data["Stock_Emas"].pct_change() * 100
@@ -75,70 +216,55 @@ latest = data.iloc[-1]
 prev = data.iloc[-2] if len(data) > 1 else latest
 first = data.iloc[0]
 
-latest_price = float(latest["Harga_Emas"])
-latest_stock = float(latest["Stock_Emas"])
-prev_price = float(prev["Harga_Emas"])
-prev_stock = float(prev["Stock_Emas"])
-first_price = float(first["Harga_Emas"])
+latest_price = safe_float(latest["Harga_Emas"])
+latest_stock = safe_float(latest["Stock_Emas"])
+prev_price = safe_float(prev["Harga_Emas"])
+prev_stock = safe_float(prev["Stock_Emas"])
+first_price = safe_float(first["Harga_Emas"])
+first_stock = safe_float(first["Stock_Emas"])
 
-price_yoy = ((latest_price / prev_price) - 1) * 100 if prev_price else 0
-stock_yoy = ((latest_stock / prev_stock) - 1) * 100 if prev_stock else 0
-avg_price_growth = ((latest_price / first_price) ** (1 / max(len(data) - 1, 1)) - 1) * 100 if first_price else 0
-total_stock_change = latest_stock - float(first["Stock_Emas"])
+price_yoy = ((latest_price / prev_price) - 1) * 100 if prev_price else 0.0
+stock_yoy = ((latest_stock / prev_stock) - 1) * 100 if prev_stock else 0.0
+avg_price_growth = (
+    ((latest_price / first_price) ** (1 / max(len(data) - 1, 1)) - 1) * 100
+    if first_price
+    else 0.0
+)
+total_stock_change = latest_stock - first_stock
 
-# Practical report anchors used as default parameters
-a_default = 2977.841
-b_default = 0.788
 mc_default = 1732.53
-r_default = 0.05
-T_default = 10
+reserve_default = 805000.0
+n_default = 4
 
-# -----------------------------
+# ============================================================
 # Sidebar
-# -----------------------------
-st.sidebar.title("Identitas Penelitian")
-st.sidebar.write("""
-PBL 3 - Ekonomi SDA & Lingkungan
+# ============================================================
+st.sidebar.title("Pengaturan Simulasi")
+st.sidebar.caption("Atur parameter supaya harga, output, dan stok benar-benar bergerak.")
 
-Topik:
-Depletable Resource Allocation (Emas)
+sim_periods = st.sidebar.slider("Horizon simulasi (periode)", 3, 20, 10, 1)
+reserve0 = st.sidebar.slider("Cadangan awal (kg)", 100000.0, 2000000.0, reserve_default, 1000.0)
+a0 = st.sidebar.slider("Intersep permintaan (a)", 1000.0, 6000.0, float(data["Harga_Emas"].max()), 1.0)
+b0 = st.sidebar.slider("Slope permintaan (b)", 0.100, 3.000, 0.788, 0.001)
+mc0 = st.sidebar.slider("Biaya ekstraksi awal (MC)", 500.0, 5000.0, mc_default, 10.0)
+n_firms = st.sidebar.slider("Jumlah perusahaan oligopoli", 2, 20, n_default, 1)
+demand_growth = st.sidebar.slider("Pertumbuhan permintaan tahunan", 0.00, 0.20, 0.04, 0.005)
+cost_growth = st.sidebar.slider("Kenaikan biaya tahunan", 0.00, 0.20, 0.03, 0.005)
+tech_improvement = st.sidebar.slider("Efisiensi teknologi", 0.00, 0.20, 0.01, 0.005)
+depletion_penalty = st.sidebar.slider("Tekanan kelangkaan terhadap biaya", 0.00, 0.50, 0.10, 0.01)
 
-Universitas Islam Bandung
-""")
-
-scenario = st.sidebar.radio(
-    "Scenario",
-    ["Pesimis", "Moderat", "Optimis"],
-    index=1,
-    key="scenario_sidebar"
+st.sidebar.divider()
+st.sidebar.caption(
+    "Catatan: di pasar persaingan, jumlah perusahaan tidak dipakai karena harga ditentukan pasar. "
+    "Parameter itu dipakai pada oligopoli."
 )
 
-st.sidebar.subheader("Parameter Simulasi")
-discount_rate = st.sidebar.slider("Tingkat bunga / diskonto (r)", 0.0, 0.20, r_default, 0.005)
-horizon = st.sidebar.slider("Horizon simulasi (tahun)", 3, 15, T_default, 1)
-mc_value = st.sidebar.slider("Biaya ekstraksi rata-rata / MC", 500.0, 4000.0, mc_default, 10.0)
-tech_improvement = st.sidebar.slider("Perbaikan teknologi (%)", 0.0, 30.0, 10.0, 0.5)
-reg_intensity = st.sidebar.slider("Intensitas regulasi hijau (%)", 0.0, 100.0, 20.0, 1.0)
-
-with st.sidebar.expander("Parameter Struktur Pasar", expanded=False):
-    a = st.slider("Intersep permintaan (a)", 1000.0, 5000.0, a_default, 1.0)
-    b = st.slider("Slope permintaan (b)", 0.100, 2.500, b_default, 0.001)
-    oligopoly_firms = st.slider("Jumlah perusahaan oligopoli", 2, 10, 4, 1)
-
-scenario_factor = {"Pesimis": 0.95, "Moderat": 1.00, "Optimis": 1.08}[scenario]
-market_price_now = latest_price * scenario_factor
-market_stock_now = latest_stock
-
-current_status = "Reserve makin layak" if market_price_now >= mc_value else "Masih resource"
-market_signal = "Bullish / scarcity naik" if price_yoy > 0 and stock_yoy < 0 else "Mixed / transisi"
-
-# -----------------------------
-# HEADER / COVER
-# -----------------------------
-
-st.markdown("""
+# ============================================================
+# COVER / HEADER
+# ============================================================
+st.markdown(
+    """
 <style>
-
 .cover-wrapper{
     margin-top: 5px;
     margin-bottom: 40px;
@@ -166,26 +292,18 @@ st.markdown("""
 }
 
 .identity-box {
-
     background: rgba(255,255,255,0.04);
-
     border: 1px solid rgba(255,255,255,0.08);
-
     border-radius: 28px;
-
     padding-top: 30px;
     padding-bottom: 12px;
     padding-left: 38px;
     padding-right: 38px;
-
     margin-top: 8px;
-
     backdrop-filter: blur(12px);
-
     box-shadow:
         0 0 0 1px rgba(255,255,255,0.02),
         0 10px 35px rgba(0,0,0,0.35);
-
     max-width: 1100px;
 }
 
@@ -219,35 +337,24 @@ st.markdown("""
 .logo-wrapper img{
     border-radius: 24px;
 }
-
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.markdown('<div class="cover-wrapper">', unsafe_allow_html=True)
-
 col1, col2 = st.columns([1.2, 4.5], gap="large")
 
 with col1:
-
-    st.markdown(
-        """
-        <div class="logo-wrapper">
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.image(
-        "Logo Unisbaa.png",
-        width=220
-    )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
+    logo_path = Path("Logo Unisbaa.png")
+    if logo_path.exists():
+        st.image(str(logo_path), width=220)
+    else:
+        st.info("Logo Unisbaa.png belum ada di repo.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with col2:
-
     st.markdown(
         """
         <div class="big-title">
@@ -255,7 +362,7 @@ with col2:
         Sumber Daya <span style="color:#F4C542;">Emas</span>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     st.markdown(
@@ -264,967 +371,257 @@ with col2:
         PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
-    st.markdown("""
-    <div class="identity-box">
-
-    <h3>Kelompok 4</h3>
-
-    <p>
-    <b>Salsa Zahratul Aulia</b> (10090224004)<br>
-    <b>Aida Farida Kultsum</b> (10090224014)<br>
-    <b>Nabil Athala Naufal</b> (10090224022)
-    </p>
-
-    <hr>
-
-    <p>
-    <b>Mata Kuliah:</b><br>
-    Ekonomi Sumber Daya Alam dan Lingkungan
-    </p>
-
-    <p>
-    <b>Dosen Pengampu:</b><br>
-    YUHKA SUNDAYA, S.E., M.Si.
-    </p>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="identity-box">
+        <h3>Kelompok 4</h3>
+        <p>
+        <b>Salsa Zahratul Aulia</b> (10090224004)<br>
+        <b>Aida Frida Kultsum</b> (10090224014)<br>
+        <b>Nabil Athala Naufal</b> (10090224022)
+        </p>
+        <hr>
+        <p>
+        <b>Mata Kuliah:</b><br>
+        Ekonomi Sumber Daya Alam dan Lingkungan
+        </p>
+        <p>
+        <b>Dosen Pengampu:</b><br>
+        YUHKA SUNDAYA, S.E., M.Si.
+        </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.info("""
-Dashboard ini menggabungkan data historis, kondisi pasar saat ini,
-simulasi Hotelling Rule, *Green Paradox*, spektrum cadangan,
-serta mekanisme struktur pasar untuk menjelaskan
-alokasi intertemporal sumber daya emas sebagai *depletable resource*.
-""")
+st.info(
+    "Dashboard ini menampilkan data historis, perubahan stock, lalu simulasi harga sumber daya emas pada pasar persaingan, monopoli, dan oligopoli."
+)
 
-# -----------------------------
-# Start: current market and historical data
-# -----------------------------
-st.subheader("1. Data Kondisi Pasar Saat Ini")
+# ============================================================
+# 1. Data kondisi pasar
+# ============================================================
+st.subheader("1. Data Kondisi Pasar (Diawal)")
 
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Harga Emas Saat Ini", fmt_idr(market_price_now), f"{price_yoy:+.2f}% yoy")
-k2.metric("Stock Emas Saat Ini", fmt_num(market_stock_now, 3), f"{stock_yoy:+.2f}% yoy")
-k3.metric("MC Rata-rata Praktikum", fmt_idr(mc_default), f"MC simulasi {fmt_idr(mc_value)}")
-k4.metric("Status Pasar", current_status, market_signal)
+k1.metric("Harga Emas Saat Ini", fmt_idr(latest_price), f"{price_yoy:+.2f}% yoy")
+k2.metric("Stock Emas Saat Ini", fmt_num(latest_stock, 3), f"{stock_yoy:+.2f}% yoy")
+k3.metric("Rata-rata Pertumbuhan Harga", f"{avg_price_growth:.2f}%")
+k4.metric("Status Pasar", reserve_status(latest_price, mc_default))
 
-st.write("""
-Kondisi pasar saat ini menunjukkan bahwa harga emas berada dalam tren naik
-sementara stock terus menurun. Kombinasi ini menandakan tekanan kelangkaan yang makin kuat.
-
-Jika harga pasar berada di atas biaya ekstraksi, maka sumber daya semakin layak
-dikategorikan sebagai reserve secara ekonomis.
-
-Dalam perspektif intertemporal, kenaikan harga mencerminkan meningkatnya *Scarcity value*
-dan ekspektasi nilai sumber daya di masa depan.
-""")
-
-st.info(
-    f"Pada kondisi scenario **{scenario}**, harga saat ini diposisikan pada {fmt_idr(market_price_now)} "
-    f"dan stock terakhir {fmt_num(market_stock_now, 3)}. Harga yang berada di atas MC menunjukkan "
-    "bahwa sumber daya semakin layak menjadi reserve secara ekonomis."
+st.write(
+    "Harga yang naik sementara stock menurun menunjukkan tekanan kelangkaan. Di titik ini, emas makin kuat diposisikan sebagai aset bernilai tinggi."
 )
 
+# ============================================================
+# 2. Data historis
+# ============================================================
 st.subheader("2. Data Historis")
-st.dataframe(data[["Tahun", "Harga_Emas", "Stock_Emas"]], use_container_width=True)
 
-st.download_button(
-    "Download Data Historis CSV",
-    data=data[["Tahun", "Harga_Emas", "Stock_Emas"]].to_csv(index=False).encode("utf-8"),
-    file_name="data_historis_emas.csv",
-    mime="text/csv",
+hist_left, hist_right = st.columns([1.2, 1])
+with hist_left:
+    st.dataframe(
+        data[["Tahun", "Harga_Emas", "Stock_Emas"]],
+        use_container_width=True,
+        height=380,
+    )
+
+with hist_right:
+    st.markdown("**Ringkasan historis**")
+    st.write(
+        f"- Tahun awal: **{int(first['Tahun'])}**\n"
+        f"- Tahun terakhir: **{int(latest['Tahun'])}**\n"
+        f"- Harga awal: **{fmt_idr(first_price)}**\n"
+        f"- Harga akhir: **{fmt_idr(latest_price)}**\n"
+        f"- Stock awal: **{fmt_num(first_stock, 3)}**\n"
+        f"- Stock akhir: **{fmt_num(latest_stock, 3)}**"
+    )
+    st.download_button(
+        "Download Data Historis CSV",
+        data=data[["Tahun", "Harga_Emas", "Stock_Emas"]].to_csv(index=False).encode("utf-8"),
+        file_name="data_historis_emas.csv",
+        mime="text/csv",
+    )
+
+# ============================================================
+# 3. Perkembangan harga emas
+# ============================================================
+st.subheader("3. Perkembangan Harga Emas")
+fig1 = make_line_figure(data["Tahun"], data["Harga_Emas"], "Tahun", "Harga Emas")
+st.pyplot(fig1, use_container_width=True)
+
+st.write(
+    "Grafik harga memperlihatkan arah perubahan harga emas dari waktu ke waktu. Naiknya harga biasanya sejalan dengan kelangkaan, ekspektasi pasar, dan biaya ekstraksi yang meningkat."
 )
 
-# -----------------------------
-# Price development
-# -----------------------------
-st.subheader("3. Perkembangan Harga Emas")
-fig1, ax1 = plt.subplots()
-ax1.plot(data["Tahun"], data["Harga_Emas"], marker="o")
-ax1.set_xlabel("Tahun")
-ax1.set_ylabel("Harga Emas")
-st.pyplot(fig1)
-
-st.write("""
-Grafik harga memperlihatkan tren kenaikan dalam jangka panjang. Kenaikan harga merefleksikan
-*Scarcity value*, ekspektasi masa depan, dan peran emas sebagai aset lindung nilai.
-""")
-
-# -----------------------------
-# Stock development
-# -----------------------------
+# ============================================================
+# 4. Perubahan stock emas
+# ============================================================
 st.subheader("4. Perubahan Stock Emas")
-fig2, ax2 = plt.subplots()
-ax2.plot(data["Tahun"], data["Stock_Emas"], marker="o")
-ax2.set_xlabel("Tahun")
-ax2.set_ylabel("Stock Emas")
-st.pyplot(fig2)
+fig2 = make_line_figure(data["Tahun"], data["Stock_Emas"], "Tahun", "Stock Emas")
+st.pyplot(fig2, use_container_width=True)
 
-st.write("""
-Penurunan stock emas menunjukkan bahwa sumber daya terus diekstraksi dan cadangan fisik
-semakin menurun. Dalam ekonomi sumber daya alam, tren ini menegaskan karakter emas sebagai
-*depletable resource*.
-""")
+st.write(
+    "Perubahan stock menampilkan cadangan yang makin menipis. Di ekonomi sumber daya alam, ini menegaskan sifat emas sebagai depletable resource."
+)
 
+# ============================================================
+# 5. Tabel perhitungan perubahan stock emas
+# ============================================================
 st.subheader("5. Tabel Perhitungan Perubahan Stock Emas")
 stock_change_table = data[["Tahun", "Stock_Emas", "Perubahan_Stock", "Perubahan_Stock_%"]].copy()
-st.dataframe(stock_change_table, use_container_width=True)
+st.dataframe(stock_change_table, use_container_width=True, height=360)
 
-st.write("""
-Kolom perubahan stock membantu melihat seberapa cepat cadangan berkurang dari tahun ke tahun.
-Perubahan negatif yang konsisten menunjukkan tekanan kelangkaan yang makin kuat.
-""")
+st.caption("Perubahan negatif berarti stock berkurang dari periode sebelumnya.")
 
-# -----------------------------
-# SIMULASI HARGA SUMBER DAYA
-# -----------------------------
+# ============================================================
+# 6. Alat simulasi harga sumber daya
+# ============================================================
 st.subheader("6. Alat Simulasi Harga Sumber Daya")
 
-st.write("""
-Bagian ini digunakan untuk mensimulasikan harga sumber daya emas
-berdasarkan biaya ekstraksi, tingkat diskonto, dan kondisi pasar.
-Simulasi ini membantu membaca bagaimana harga bergerak dalam kerangka intertemporal.
-""")
+st.write(
+    "Simulasi di bawah ini dibuat supaya angka di tabel dan grafik benar-benar bergerak ketika parameter pasar diubah. Tiga mekanisme pasar dipisahkan: persaingan, monopoli, dan oligopoli."
+)
 
-sim_col1, sim_col2, sim_col3 = st.columns(3)
+sim_tabs = st.tabs(["Persaingan Sempurna", "Monopoli", "Oligopoli", "Perbandingan"])
 
-with sim_col1:
-    sim_mc = st.slider("Biaya ekstraksi (MC) simulasi", 500.0, 4000.0, mc_default, 10.0)
-with sim_col2:
-    sim_r = st.slider("Tingkat bunga / diskonto (r)", 0.0, 0.20, r_default, 0.005)
-with sim_col3:
-    sim_years = st.slider("Horizon simulasi", 3, 15, T_default, 1)
+sim_comp = simulate_market(
+    "Persaingan Sempurna",
+    a0=a0,
+    b0=b0,
+    mc0=mc0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+)
 
-sim_price0 = max(first_price, sim_mc)
-sim_prices = [sim_price0 * ((1 + sim_r) ** t) for t in range(sim_years + 1)]
-sim_df = pd.DataFrame({
-    "Tahun": list(range(sim_years + 1)),
-    "Harga Simulasi": sim_prices
-})
+sim_mono = simulate_market(
+    "Monopoli",
+    a0=a0,
+    b0=b0,
+    mc0=mc0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+)
 
-sim_c1, sim_c2 = st.columns(2)
-with sim_c1:
-    st.dataframe(sim_df, use_container_width=True)
-with sim_c2:
-    fig_sim, ax_sim = plt.subplots()
-    ax_sim.plot(sim_df["Tahun"], sim_df["Harga Simulasi"], marker="o")
-    ax_sim.set_xlabel("Tahun")
-    ax_sim.set_ylabel("Harga Simulasi")
-    st.pyplot(fig_sim)
+sim_oligo = simulate_market(
+    "Oligopoli",
+    a0=a0,
+    b0=b0,
+    mc0=mc0,
+    reserve0=reserve0,
+    periods=sim_periods,
+    n_firms=n_firms,
+    demand_growth=demand_growth,
+    cost_growth=cost_growth,
+    tech_improvement=tech_improvement,
+    depletion_penalty=depletion_penalty,
+)
 
-st.write("""
-Jika tingkat diskonto meningkat, jalur harga simulasi menjadi lebih cepat naik.
-Ini memperkuat logika Hotelling bahwa sumber daya depletable memiliki nilai waktu.
-""")
 
-# -----------------------------
-# BAB I
-# -----------------------------
-st.divider()
-st.subheader("BAB I. Pendahuluan")
+def render_simulation(df: pd.DataFrame, title: str, note: str):
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Harga Awal", fmt_idr(df.iloc[0]["Harga"]))
+    c2.metric("Output Awal", fmt_num(df.iloc[0]["Output"], 2))
+    c3.metric("Stock Awal", fmt_num(df.iloc[0]["Stock_Tersisa"], 2))
 
-st.markdown("### 1.1 Latar Belakang")
+    st.write(note)
 
-st.write("""
-Emas merupakan salah satu komoditas sumber daya alam tidak terbarukan (*depletable resources*) yang memiliki nilai ekonomi tinggi dalam sistem perekonomian global. Nilai emas tidak hanya terbentuk dari fungsi fisiknya 
-sebagai komoditas tambang, tetapi juga dari konstruksi sosial dan makna yang diberikan manusia terhadap komoditas tersebut. Menurut perspektif *The Sense of Beauty* yang dikemukakan oleh George Santayana, 
-nilai muncul akibat preferensi dan kebutuhan manusia terhadap suatu objek. Dalam konteks ekonomi modern, emas dipandang sebagai aset yang mampu menjaga 
-kestabilan nilai, berfungsi sebagai instrumen lindung inflasi (*hedging asset*), serta menjadi simbol keamanan finansial di tengah ketidakpastian ekonomi global.
-Persepsi ini menyebabkan permintaan terhadap emas tetap tinggi dan membentuk ekspektasi bahwa emas akan terus memiliki nilai ekonomi di masa depan.
-
-Sebagai sumber daya yang terbatas, emas menghadapi tantangan deplesi akibat 
-aktivitas ekstraksi yang berkelanjutan. Berdasarkan data industri emas ANTAM 
-periode 2014–2024, harga emas meningkat dari USD 1.264,99 menjadi USD 2.354,35, 
-sementara volume produksi menurun dari 2.342 kg menjadi 1.019 kg.
-Pada periode yang sama, nilai *marginal cost* (MC) meningkat dari sekitar 728,5 
-menjadi 3.955. Secara ekonomi, kondisi ini menunjukkan bahwa proses ekstraksi 
-emas menjadi semakin mahal akibat berkurangnya cadangan yang mudah diakses 
-dan meningkatnya biaya operasional.
-Fenomena ini menunjukkan bahwa peningkatan nilai ekonomi emas tidak selalu 
-diikuti oleh peningkatan kapasitas produksi, melainkan dapat mencerminkan 
-meningkatnya kelangkaan sumber daya.
-
-Kondisi ini menimbulkan dilema intertemporal dalam pengelolaan sumber daya alam, 
-yaitu pertukaran antara keuntungan ekonomi jangka pendek dan keberlanjutan 
-nilai ekonomi di masa depan.
-Ketika harga emas meningkat, perusahaan terdorong untuk mempercepat ekstraksi 
-guna memperoleh rente sumber daya (*resource rent*) yang lebih besar. Namun, 
-eksploitasi yang terlalu agresif dapat mempercepat penurunan cadangan dan 
-meningkatkan biaya ekstraksi pada periode berikutnya.
-Dalam perspektif ekonomi sumber daya alam, keputusan ekstraksi dipengaruhi 
-tidak hanya oleh kondisi pasar saat ini, tetapi juga oleh ekspektasi terhadap 
-nilai ekonomi di masa depan.
-Oleh karena itu, pengelolaan emas memerlukan alokasi sumber daya antarwaktu 
-yang efisien agar kepentingan generasi saat ini tidak mengorbankan potensi 
-manfaat ekonomi bagi generasi mendatang.
-
-Berdasarkan uraian tersebut, penelitian ini bertujuan untuk menganalisis 
-bagaimana dinamika harga, biaya produksi, dan keputusan ekstraksi emas 
-mencerminkan persoalan efisiensi alokasi intertemporal.
-Penelitian ini juga bertujuan untuk memahami peran persepsi manusia dan 
-mekanisme pasar dalam membentuk nilai ekonomi emas, serta mengevaluasi 
-strategi pengelolaan ekstraksi yang lebih efisien dan berkelanjutan di tengah 
-keterbatasan cadangan sumber daya alam.
-""")
-st.caption("""
-Sumber data penelitian berasal dari data praktikum estimasi biaya,
-tren harga emas historis, serta pengolahan simulasi intertemporal
-yang disusun berdasarkan laporan praktikum Kelompok 4.
-""")
-
-st.markdown("### 1.2 Rumusan Masalah")
-st.write("""
-1. Bagaimana dinamika perubahan harga dan teknologi memengaruhi pergeseran status cadangan
-   (*resource* ke *reserve*) pada komoditas ini?
-2. Apakah jalur ekstraksi yang berjalan saat ini sudah memenuhi kondisi efisiensi alokasi
-   intertemporal sesuai Aturan Hotelling?
-3. Bagaimana potensi distorsi pasar atau fenomena *Green Paradox* dapat terjadi akibat rencana
-   kebijakan lingkungan di masa depan?
-""")
-
-st.markdown("### 1.3 Tujuan Penelitian")
-st.write("""
-Menemukan pola alokasi terbaik yang menyeimbangkan antara kebutuhan ekonomi jangka pendek
-dan keberlanjutan nilai di masa depan.
-""")
-
-# -----------------------------
-# BAB II
-# -----------------------------
-st.subheader("BAB II. Tinjauan Pustaka dan Landasan Teoritis")
-
-st.markdown("### 2.1 Konsep Nilai dan Ekspektasi Waktu (Perspektif Santayana)")
-st.write("""
-Menurut *The Sense of Beauty* karya George Santayana, keputusan optimal dalam alokasi sumber daya tidak hanya ditentukan oleh perhitungan ekonomi, tetapi juga oleh persepsi dan harapan manusia terhadap masa depan. Dalam sumber daya tak terbarukan seperti emas, keputusan ekstraksi melibatkan pilihan antara manfaat saat ini dan potensi nilai di masa depan. Jika harga diperkirakan naik, ekstraksi cenderung ditunda, sedangkan kebutuhan ekonomi dapat mempercepat ekstraksi. Hasil praktikum menunjukkan harga dan MUC meningkat, sementara laju ekstraksi menurun, sehingga pengelolaan sumber daya dipengaruhi faktor ekonomi sekaligus persepsi dan ekspektasi manusia.
-""")
-
-st.markdown("### 2.2 Taksonomi Cadangan")
-st.write("""
-Dalam ekonomi sumber daya *depletable*, *resources* adalah total sumber daya yang tersedia secara geologis, sedangkan *reserves* adalah bagian dari *resources* yang sudah diketahui dan layak diekstraksi secara ekonomi dengan teknologi saat ini. Batas keduanya bersifat dinamis karena dipengaruhi harga pasar, teknologi, dan biaya ekstraksi. Saat harga naik atau teknologi berkembang, resources yang sebelumnya belum ekonomis dapat berubah menjadi reserves; sebaliknya, saat harga turun atau biaya naik, *reserves* dapat kembali menjadi tidak layak ditambang. Pada kasus emas, hasil praktikum menunjukkan biaya marjinal ekstraksi meningkat seiring waktu karena produksi menurun dan ekstraksi makin sulit, sehingga sebagian *reserves* bisa menjadi tidak ekonomis jika tidak diimbangi kenaikan harga atau inovasi teknologi.
-""")
-
-st.markdown("### 2.3 Model Alokasi Intertemporal dan Aturan Hotelling")
-st.write("""
-Aturan Hotelling menyatakan bahwa harga bersih sumber daya depletable
-harus tumbuh sebesar tingkat bunga agar alokasi sumber daya efisien antar waktu.
-
-Secara matematis:
-
-dP/dt = rP
-
-di mana:
-- P = harga bersih sumber daya
-- r = tingkat bunga / diskonto
-- dP/dt = perubahan harga terhadap waktu
-
-Dalam kondisi efisien, pemilik sumber daya akan bersikap netral antara:
-1. mengekstraksi sekarang lalu menginvestasikan hasilnya,
-2. atau menahan sumber daya untuk dijual di masa depan.
-
-Jika harga sumber daya tumbuh lebih cepat dibanding tingkat bunga,
-maka penundaan ekstraksi menjadi lebih rasional.
-Sebaliknya, jika pertumbuhan harga lebih rendah dari tingkat bunga,
-ekstraksi saat ini menjadi lebih menguntungkan.
-""")
-
-# -----------------------------
-# Simulasi Jalur Hotelling
-# -----------------------------
-
-hotelling_year = list(range(horizon + 1))
-
-hotelling_path = [
-    first_price * ((1 + discount_rate) ** t)
-    for t in hotelling_year
-]
-
-hotelling_sim = pd.DataFrame({
-    "Periode": hotelling_year,
-    "Harga_Hotelling": hotelling_path
-})
-
-c_hot1, c_hot2 = st.columns(2)
-
-with c_hot1:
-    st.dataframe(hotelling_sim, use_container_width=True)
-
-with c_hot2:
-    fig_hsim, ax_hsim = plt.subplots()
-
-    ax_hsim.plot(
-        hotelling_sim["Periode"],
-        hotelling_sim["Harga_Hotelling"],
-        marker="o"
-    )
-
-    ax_hsim.set_xlabel("Periode")
-    ax_hsim.set_ylabel("Harga Bersih")
-
-    st.pyplot(fig_hsim)
-
-st.write("""
-Simulasi ini menunjukkan jalur teoritis harga sumber daya berdasarkan
-Aturan Hotelling.
-
-Semakin tinggi tingkat bunga, semakin cepat harga sumber daya
-harus meningkat agar pemilik sumber daya tetap indifferent antara
-mengekstraksi sekarang atau di masa depan.
-
-Dalam konteks emas, kenaikan harga dan MUC menunjukkan bahwa
-emas diperlakukan sebagai aset waktu (*asset in situ*)
-yang nilainya meningkat seiring kelangkaan.
-""")
-
-st.markdown("### 2.4 Eksternalitas Lingkungan dan *Green Paradox*")
-st.write("""
-Dalam ekonomi sumber daya depletable, kegagalan pasar terjadi ketika
-biaya sosial dari aktivitas ekstraksi seperti polusi, kerusakan lingkungan,
-dan emisi karbon tidak tercermin dalam harga pasar.
-
-Akibatnya, harga pasar menjadi lebih rendah dibandingkan biaya sosial sebenarnya,
-sehingga ekstraksi cenderung berlangsung lebih cepat daripada tingkat yang efisien.
-
-Fenomena ini disebut eksternalitas negatif karena sebagian biaya produksi
-ditanggung oleh masyarakat dan lingkungan, bukan oleh produsen secara langsung.
-
-Dalam perspektif intertemporal, produsen juga dapat merespons rencana
-regulasi lingkungan di masa depan dengan mempercepat ekstraksi saat ini.
-Fenomena tersebut dikenal sebagai *Green Paradox*.
-""")
-
-# -----------------------------
-# Simulasi Green Paradox
-# -----------------------------
-
-gp_years = list(range(horizon + 1))
-
-baseline_extraction = []
-policy_extraction = []
-
-base_q = max((a - mc_value) / b, 0)
-
-announce_year = max(1, horizon // 2)
-
-for t in gp_years:
-
-    q_base = max(base_q * (1 - 0.05 * t), 0)
-
-    if t < announce_year:
-        q_policy = q_base * (
-            1 + (reg_intensity / 100) * 0.60
+    left, right = st.columns(2)
+    with left:
+        st.dataframe(
+            df[
+                [
+                    "Periode",
+                    "Permintaan_Intersep",
+                    "MC_Efektif",
+                    "Output",
+                    "Harga",
+                    "Stock_Tersisa",
+                    "Pendapatan",
+                ]
+            ],
+            use_container_width=True,
+            height=380,
         )
 
-    elif t == announce_year:
-        q_policy = q_base * (
-            1 + (reg_intensity / 100) * 0.20
-        )
+    with right:
+        fig_p, ax_p = plt.subplots()
+        ax_p.plot(df["Periode"], df["Harga"], marker="o")
+        ax_p.set_xlabel("Periode")
+        ax_p.set_ylabel("Harga")
+        ax_p.set_title(f"Jalur Harga — {title}")
+        st.pyplot(fig_p, use_container_width=True)
 
-    else:
-        q_policy = q_base * (
-            1 - (reg_intensity / 100) * 0.25
-        )
+        fig_s, ax_s = plt.subplots()
+        ax_s.plot(df["Periode"], df["Stock_Tersisa"], marker="o")
+        ax_s.set_xlabel("Periode")
+        ax_s.set_ylabel("Stock Tersisa")
+        ax_s.set_title(f"Jalur Stock — {title}")
+        st.pyplot(fig_s, use_container_width=True)
 
-    baseline_extraction.append(q_base)
-    policy_extraction.append(q_policy)
 
-green_df = pd.DataFrame({
-    "Periode": gp_years,
-    "Ekstraksi_Baseline": baseline_extraction,
-    "Ekstraksi_dengan_Kebijakan": policy_extraction
-})
-
-gcol1, gcol2 = st.columns(2)
-
-with gcol1:
-    st.dataframe(green_df, use_container_width=True)
-
-with gcol2:
-
-    fig_green, ax_green = plt.subplots()
-
-    ax_green.plot(
-        green_df["Periode"],
-        green_df["Ekstraksi_Baseline"],
-        marker="o",
-        label="Baseline"
+with sim_tabs[0]:
+    st.markdown("### Mekanisme Pasar Persaingan")
+    st.write(
+        "Dalam persaingan sempurna, perusahaan adalah price taker. Harga cenderung mengikuti biaya marjinal, dan output menyesuaikan sampai pasar mencapai keseimbangan."
+    )
+    render_simulation(
+        sim_comp,
+        "Persaingan Sempurna",
+        "Ketika stock mulai terbatas, harga bisa terdorong naik karena kelangkaan mulai terasa.",
     )
 
-    ax_green.plot(
-        green_df["Periode"],
-        green_df["Ekstraksi_dengan_Kebijakan"],
-        marker="o",
-        label="Dengan Kebijakan"
+with sim_tabs[1]:
+    st.markdown("### Mekanisme Pasar Monopoli")
+    st.write(
+        "Dalam monopoli, satu produsen menguasai pasar. Output cenderung lebih kecil dibanding persaingan, sedangkan harga lebih tinggi karena produsen punya kekuatan pasar."
     )
-
-    ax_green.set_xlabel("Periode")
-    ax_green.set_ylabel("Ekstraksi")
-
-    ax_green.legend()
-
-    st.pyplot(fig_green)
-
-st.write("""
-Grafik menunjukkan bahwa sebelum regulasi lingkungan diberlakukan,
-produsen cenderung mempercepat ekstraksi untuk menghindari biaya
-yang lebih tinggi di masa depan.
-
-Kondisi ini menggambarkan *Green Paradox*,
-yaitu ketika kebijakan lingkungan yang dirancang untuk mengurangi emisi
-justru memicu percepatan ekstraksi dalam jangka pendek.
-""")
-
-# -----------------------------
-# INTERPRETASI GREEN PARADOX
-# -----------------------------
-
-avg_policy = green_df["Ekstraksi_dengan_Kebijakan"].mean()
-avg_base = green_df["Ekstraksi_Baseline"].mean()
-
-if avg_policy > avg_base:
-
-    st.error("""
-    Simulasi menunjukkan adanya indikasi *Green Paradox*.
-
-    Pengumuman kebijakan lingkungan menyebabkan produsen
-    mempercepat ekstraksi sebelum regulasi diberlakukan sepenuhnya.
-
-    Fenomena ini dikenal sebagai *race to extract*,
-    yaitu percepatan produksi untuk menghindari
-    potensi kerugian akibat kebijakan masa depan.
-    """)
-
-else:
-
-    st.success("""
-    Simulasi belum menunjukkan indikasi *Green Paradox* yang kuat.
-
-    Kebijakan lingkungan tidak memicu percepatan ekstraksi
-    secara signifikan sehingga tekanan eksploitasi
-    masih relatif terkendali.
-    """)
-
-# -----------------------------
-# IMPLEMENTASI TEKNIS
-# -----------------------------
-st.subheader("Implementasi Teknis")
-
-tech1, tech2 = st.columns(2)
-
-with tech1:
-    st.success("Coding menggunakan GitHub")
-    st.write("""
-    Seluruh kode disimpan dalam repository GitHub agar versi program terdokumentasi,
-    mudah diperbarui, dan dapat dihubungkan langsung ke Streamlit Cloud.
-    """)
-
-with tech2:
-    st.info("Display user interface dengan Streamlit")
-    st.write("""
-    Streamlit digunakan untuk menampilkan data historis, grafik, simulasi harga,
-    mekanisme pasar, dan interpretasi ekonomi dalam satu antarmuka interaktif.
-    """)
-
-# -----------------------------
-# BAB IV
-# -----------------------------
-st.subheader("BAB IV. Hasil dan Pembahasan")
-
-# 4.1 reserve spectrum proxy / current market interpretation
-st.markdown("### 4.1 Analisis Pergeseran Spektrum Cadangan")
-st.write("""
-Hasil praktikum sebelumnya menunjukkan bahwa kenaikan harga emas dan perubahan biaya produksi
-dapat mengubah sumber daya yang semula belum ekonomis menjadi cadangan yang layak ditambang.
-Kondisi ini menegaskan bahwa batas antara *resource* dan *reserve* bersifat dinamis karena dipengaruhi
-harga pasar, teknologi, dan biaya ekstraksi.
-""")
-
-# 4.1.1 Reserve spectrum simulation
-st.markdown("#### Simulasi Spektrum Cadangan")
-tech_factor = 1 - (tech_improvement / 100)
-effective_mc_series = mc_value * (tech_factor ** (data.index / max(len(data)-1, 1)))
-reserve_score = ((data["Harga_Emas"] - effective_mc_series) / effective_mc_series).clip(lower=0, upper=1.5)
-reserve_volume = data["Stock_Emas"] * reserve_score.clip(upper=1.0)
-
-reserve_table = pd.DataFrame({
-    "Tahun": data["Tahun"],
-    "Harga_Emas": data["Harga_Emas"],
-    "MC_Efektif": effective_mc_series,
-    "Skor_Reserve": reserve_score,
-    "Estimasi_Reserve": reserve_volume,
-})
-reserve_table["Status"] = reserve_table["Skor_Reserve"].apply(lambda x: "Reserve" if x > 0 else "Subeconomic / Resource")
-
-c5, c6 = st.columns(2)
-with c5:
-    st.dataframe(reserve_table, use_container_width=True)
-with c6:
-    fig_res, ax_res = plt.subplots()
-    ax_res.plot(reserve_table["Tahun"], reserve_table["Skor_Reserve"], marker="o")
-    ax_res.set_xlabel("Tahun")
-    ax_res.set_ylabel("Skor Kelayakan Reserve")
-    st.pyplot(fig_res)
-
-st.write("""
-Jika harga naik atau teknologi menekan biaya efektif, sebagian *resource* bergerak menjadi *reserve*.
-Inilah inti spektrum cadangan: perubahan status ekonomis karena perubahan pasar dan teknologi.
-""")
-
-st.download_button(
-    "Download Tabel Spektrum Cadangan CSV",
-    data=reserve_table.to_csv(index=False).encode("utf-8"),
-    file_name="spektrum_cadangan_emas.csv",
-    mime="text/csv",
-)
-
-# 4.2 Hotelling pure test
-st.markdown("### 4.2 Simulasi Hotelling Rule (Model Dasar) - Uji Teori Hotelling Murni")
-hotelling_df = data[["Tahun", "Harga_Emas"]].copy()
-hotelling_df["Hotelling_Benchmark"] = first_price * ((1 + discount_rate) ** (hotelling_df.index))
-hotelling_df["Selisih"] = hotelling_df["Harga_Emas"] - hotelling_df["Hotelling_Benchmark"]
-avg_gap = hotelling_df["Selisih"].mean()
-avg_actual_growth = avg_price_growth
-
-colh1, colh2 = st.columns(2)
-with colh1:
-    st.dataframe(hotelling_df, use_container_width=True)
-with colh2:
-    fig_hot, ax_hot = plt.subplots()
-    ax_hot.plot(hotelling_df["Tahun"], hotelling_df["Harga_Emas"], marker="o", label="Harga Aktual")
-    ax_hot.plot(hotelling_df["Tahun"], hotelling_df["Hotelling_Benchmark"], marker="o", label="Benchmark Hotelling")
-    ax_hot.set_xlabel("Tahun")
-    ax_hot.set_ylabel("Harga")
-    ax_hot.legend()
-    st.pyplot(fig_hot)
-
-st.write(f"""
-Rata-rata pertumbuhan harga aktual adalah {avg_actual_growth:.2f}% per tahun, sedangkan tingkat bunga
-simulasi adalah {discount_rate*100:.2f}%. Selisih rata-rata aktual terhadap *benchmark Hotelling* adalah
-{fmt_idr(avg_gap)}. Jika selisih kecil, jalur aktual mendekati efisiensi intertemporal dan jika selisih
-besar, berarti ada distorsi pasar, biaya ekstraksi, atau mekanisme pasar yang menyimpang.
-""")
-
-# -----------------------------
-# INTERPRETASI HOTELLING
-# -----------------------------
-
-if avg_actual_growth > (discount_rate * 100):
-
-    st.success("""
-    Pertumbuhan harga aktual lebih tinggi dibanding tingkat bunga.
-
-    Hal ini menunjukkan bahwa penahanan ekstraksi masih rasional
-    karena nilai sumber daya meningkat lebih cepat dibanding
-    opportunity cost modal.
-
-    Kondisi ini relatif mendekati logika efisiensi intertemporal
-    menurut Aturan Hotelling.
-    """)
-
-else:
-
-    st.warning("""
-    Pertumbuhan harga aktual lebih rendah dibanding tingkat bunga.
-
-    Hal ini menunjukkan bahwa ekstraksi saat ini cenderung
-    lebih menguntungkan dibanding menahan sumber daya
-    untuk masa depan.
-
-    Kondisi ini menunjukkan adanya penyimpangan
-    dari jalur efisiensi Hotelling.
-    """)
-
-st.download_button(
-    "Download Tabel Hotelling CSV",
-    data=hotelling_df.to_csv(index=False).encode("utf-8"),
-    file_name="hotelling_emas.csv",
-    mime="text/csv",
-)
-year = st.slider("Tahun pengumuman kebijakan hijau (indeks waktu)", 1, horizon - 1 if horizon > 1 else 1, max(1, horizon // 2), 1)
-base_extraction = max((a - mc_value) / b, 0)
-
-gp_rows = []
-for t in range(horizon + 1):
-    base_q = max(base_extraction * (1 - 0.06 * t), 0)
-    if t < announce_year:
-        q_policy = base_q * (1 + reg_intensity / 100 * 0.60)
-    elif t == announce_year:
-        q_policy = base_q * (1 + reg_intensity / 100 * 0.25)
-    else:
-        q_policy = base_q * (1 - reg_intensity / 100 * 0.20)
-    gp_rows.append({
-        "Tahun": t,
-        "Ekstraksi_Baseline": base_q,
-        "Ekstraksi_dengan_Kebijakan": q_policy,
-        "Selisih": q_policy - base_q
-    })
-
-gp_table = pd.DataFrame(gp_rows)
-g1, g2 = st.columns(2)
-with g1:
-    st.dataframe(gp_table, use_container_width=True)
-with g2:
-    fig_gp, ax_gp = plt.subplots()
-    ax_gp.plot(gp_table["Tahun"], gp_table["Ekstraksi_Baseline"], marker="o", label="Baseline")
-    ax_gp.plot(gp_table["Tahun"], gp_table["Ekstraksi_dengan_Kebijakan"], marker="o", label="Dengan Kebijakan")
-    ax_gp.set_xlabel("Tahun")
-    ax_gp.set_ylabel("Ekstraksi")
-    ax_gp.legend()
-    st.pyplot(fig_gp)
-
-st.write("""
-Ketika kebijakan hijau diumumkan, produsen dapat mempercepat ekstraksi sebelum regulasi berlaku.
-Itulah efek *Green Paradox*: aturan yang dimaksudkan mengendalikan emisi justru memicu percepatan
-ekstraksi di awal.
-""")
-
-st.markdown("### 4.3 Identifikasi Distorsi Pasar dan Dampak Kebijakan")
-# -----------------------------
-# IDENTIFIKASI DISTORSI PASAR
-# -----------------------------
-
-st.markdown("#### Identifikasi Distorsi Pasar")
-
-st.write("""
-Harga pasar sumber daya alam sering kali belum memasukkan biaya sosial lingkungan seperti kerusakan lahan, pencemaran, dan degradasi lingkungan. Akibatnya, harga pasar menjadi lebih murah dibandingkan
-biaya sosial sebenarnya (*social cost*). Fenomena ini disebut distorsi pasar akibat eksternalitas negatif.
-""")
-
-# INPUT BIAYA SOSIAL
-social_cost = st.slider(
-    "Estimasi biaya sosial lingkungan",
-    0.0,
-    1500.0,
-    400.0,
-    10.0
-)
-
-# PERHITUNGAN
-social_price = mc_value + social_cost
-distortion_gap = social_price - mc_value
-
-# TABEL
-distortion_df = pd.DataFrame({
-    "Komponen": [
-        "Marginal Cost (MC)",
-        "Biaya Sosial",
-        "Total Social Cost"
-    ],
-    "Nilai": [
-        mc_value,
-        social_cost,
-        social_price
-    ]
-})
-
-st.dataframe(distortion_df, use_container_width=True)
-
-# GRAFIK
-fig_dist, ax_dist = plt.subplots()
-
-kategori = [
-    "MC",
-    "Biaya Sosial",
-    "*Social Cost*"
-]
-
-nilai = [
-    mc_value,
-    social_cost,
-    social_price
-]
-
-ax_dist.bar(kategori, nilai)
-
-ax_dist.set_ylabel("Biaya")
-
-st.pyplot(fig_dist)
-
-# INTERPRETASI
-st.write(f"""
-Simulasi menunjukkan bahwa biaya ekstraksi langsung (MC)
-sebesar {fmt_idr(mc_value)} belum mencerminkan
-seluruh biaya lingkungan.
-
-Ketika biaya sosial dimasukkan,
-*total social cost* meningkat menjadi
-{fmt_idr(social_price)}.
-
-Hal ini menunjukkan adanya distorsi pasar
-karena harga pasar belum sepenuhnya
-menginternalisasi dampak lingkungan.
-""")
-
-st.download_button(
-    "Download Tabel Green Paradox CSV",
-    data=gp_table.to_csv(index=False).encode("utf-8"),
-    file_name="green_paradox_emas.csv",
-    mime="text/csv",
-)
-
-# -----------------------------
-# MEKANISME STRUKTUR PASAR
-# -----------------------------
-st.markdown("### 4.4 Mekanisme Struktur Pasar dan Evaluasi Hotelling")
-st.markdown("#### Perbandingan Struktur Pasar")
-
-market_compare = pd.DataFrame({
-    "Struktur Pasar": [
+    render_simulation(
+        sim_mono,
         "Monopoli",
+        "Monopoli biasanya menghasilkan output paling rendah dan harga paling tinggi pada parameter yang sama.",
+    )
+
+with sim_tabs[2]:
+    st.markdown("### Mekanisme Pasar Oligopoli")
+    st.write(
+        "Dalam oligopoli, beberapa perusahaan saling bereaksi satu sama lain. Semakin banyak perusahaan, hasilnya makin mendekati persaingan sempurna."
+    )
+    render_simulation(
+        sim_oligo,
         "Oligopoli",
-        "Persaingan Sempurna"
-    ],
+        "Jumlah perusahaan di sini benar-benar memengaruhi output dan harga melalui formula Cournot.",
+    )
 
-    "Karakteristik": [
-        "Harga tinggi, produksi rendah",
-        "Harga moderat, market power terbatas",
-        "Harga mendekati MC"
-    ],
+with sim_tabs[3]:
+    st.markdown("### Perbandingan Tiga Mekanisme Pasar")
+    summary_df = pd.DataFrame(
+        {
+            "Persaingan": structure_summary(sim_comp),
+            "Monopoli": structure_summary(sim_mono),
+            "Oligopoli": structure_summary(sim_oligo),
+        }
+    )
+    st.dataframe(summary_df, use_container_width=True)
+    st.write(
+        "Secara mikroekonomi, urutannya biasanya: harga persaingan paling rendah, monopoli paling tinggi, dan oligopoli berada di tengah."
+    )
 
-    "Efisiensi Hotelling": [
-        "Cenderung menyimpang",
-        "Sebagian menyimpang",
-        "Paling efisien"
-    ],
-
-    "Kecepatan Habisnya Cadangan": [
-        "Lebih lambat",
-        "Sedang",
-        "Lebih cepat"
-    ]
-})
-
-st.dataframe(
-    market_compare,
-    use_container_width=True
+st.success(
+    "Simulasi sudah menghubungkan parameter pasar dengan tabel dan grafik, sehingga perubahan slider langsung mengubah hasil."
 )
-
-st.write("""
-Bagian ini mensimulasikan bagaimana jumlah perusahaan memengaruhi harga,
-jumlah produksi, *market power*, dan efisiensi intertemporal sumber daya emas.
-
-Jika:
-- jumlah perusahaan = 1 → monopoli
-- jumlah perusahaan = 2 → duopoli
-- jumlah perusahaan ≥ 3 → oligopoli
-
-Semakin sedikit jumlah perusahaan, semakin besar kekuatan pasar (*market power*)
-dan semakin besar peluang penyimpangan dari efisiensi Hotelling.
-""")
-st.info("""
-Interpretasi struktur pasar:
-
-• Monopoli → hanya terdapat 1 perusahaan dominan.  
-• Duopoli → pasar dikendalikan oleh 2 perusahaan utama.  
-• Oligopoli → pasar terdiri dari beberapa perusahaan besar.  
-• Persaingan sempurna → jumlah perusahaan sangat banyak sehingga harga mendekati biaya produksi.
-
-Semakin kecil jumlah perusahaan, semakin besar kemampuan perusahaan
-mempengaruhi harga pasar (*market power*).
-""")
-
-# -----------------------------
-# INPUT STRUKTUR PASAR
-# -----------------------------
-jumlah_perusahaan = st.slider(
-    "Jumlah perusahaan dalam pasar",
-    1,
-    10,
-    3,
-    1
-)
-
-# -----------------------------
-# PENENTUAN STRUKTUR PASAR
-# -----------------------------
-if jumlah_perusahaan == 1:
-    struktur_pasar = "Monopoli"
-
-elif jumlah_perusahaan == 2:
-    struktur_pasar = "Duopoli"
-
-elif jumlah_perusahaan <= 5:
-    struktur_pasar = "Oligopoli"
-
-else:
-    struktur_pasar = "Persaingan Sempurna"
-
-# -----------------------------
-# RUMUS COURNOT
-# -----------------------------
-Q_market = (
-    (jumlah_perusahaan * (a - mc_value))
-    / (b * (jumlah_perusahaan + 1))
-)
-
-P_market = a - (b * Q_market)
-
-markup = P_market - mc_value
-muc_value = P_market - mc_value
-
-produksi_perusahaan = Q_market / jumlah_perusahaan
-umur_cadangan = latest_stock / Q_market if Q_market > 0 else 0
-
-# -----------------------------
-# TABEL HASIL
-# -----------------------------
-market_result = pd.DataFrame({
-    "Struktur Pasar": [struktur_pasar],
-    "Jumlah Perusahaan": [jumlah_perusahaan],
-    "Harga Pasar": [P_market],
-    "Total Produksi": [Q_market],
-    "Produksi per Perusahaan": [produksi_perusahaan],
-    "Markup terhadap MC": [markup],
-    "Marginal User Cost": [muc_value],
-    "Estimasi Umur Cadangan": [umur_cadangan],
-})
-
-st.dataframe(market_result, use_container_width=True)
-
-# -----------------------------
-# GRAFIK
-# -----------------------------
-fig_market, ax_market = plt.subplots()
-
-kategori = [
-    "Harga",
-    "Total Produksi",
-    "Markup"
-]
-
-nilai = [
-    P_market,
-    Q_market,
-    markup
-]
-
-ax_market.bar(kategori, nilai)
-
-ax_market.set_title(
-    f"Simulasi Struktur Pasar: {struktur_pasar}"
-)
-
-st.pyplot(fig_market)
-
-# -----------------------------
-# INTERPRETASI EKONOMI
-# -----------------------------
-st.write(f"""
-Hasil simulasi menunjukkan bahwa struktur pasar saat ini termasuk
-**{struktur_pasar}** dengan jumlah perusahaan sebanyak
-**{jumlah_perusahaan} perusahaan**.
-
-Harga pasar hasil simulasi sebesar
-**{fmt_idr(P_market)}** dengan total produksi sebesar
-**{fmt_num(Q_market)}**.
-
-Nilai markup terhadap *marginal cost* sebesar
-**{fmt_idr(markup)}** menunjukkan adanya *market power*
-dalam pembentukan harga.
-
-Semakin sedikit jumlah perusahaan, maka:
-- harga cenderung lebih tinggi,
-- produksi cenderung lebih rendah,
-- dan penyimpangan dari efisiensi Hotelling semakin besar.
-
-Sebaliknya, ketika jumlah perusahaan meningkat,
-struktur pasar bergerak mendekati persaingan sempurna,
-sehingga harga semakin dekat dengan biaya ekstraksi.
-""")
-st.write(f"""
-Dengan tingkat produksi saat ini,
-estimasi umur cadangan emas adalah sekitar
-{umur_cadangan:.2f} periode.
-
-Hal ini menunjukkan bahwa semakin besar total produksi,
-semakin cepat cadangan sumber daya akan habis.
-
-Sebaliknya, pembatasan produksi dan efisiensi ekstraksi
-dapat memperpanjang umur cadangan sumber daya.
-""")
-st.caption("""
-Estimasi umur cadangan dihitung menggunakan pendekatan sederhana:
-
-umur cadangan = total stock ÷ total produksi.
-
-Nilai ini digunakan sebagai indikator simulasi intertemporal
-untuk memperkirakan seberapa cepat sumber daya habis
-pada berbagai struktur pasar.
-""")
-
-# -----------------------------
-# EVALUASI HOTELLING
-# -----------------------------
-st.markdown("#### Evaluasi Efisiensi Hotelling")
-
-if markup > 500:
-    evaluasi_hotelling = """
-    Struktur pasar menunjukkan *market power* yang cukup kuat.
-    Harga jauh di atas biaya ekstraksi sehingga jalur harga
-    berpotensi menyimpang dari efisiensi Hotelling.
-    """
-
-elif markup > 100:
-    evaluasi_hotelling = """
-    Struktur pasar menunjukkan *market power* sedang.
-    Jalur harga masih mengandung deviasi terhadap kondisi efisiensi.
-    """
-
-else:
-    evaluasi_hotelling = """
-    Struktur pasar relatif mendekati persaingan sempurna.
-    Harga semakin dekat dengan biaya ekstraksi sehingga
-    lebih mendekati kondisi efisiensi Hotelling.
-    """
-
-st.info(evaluasi_hotelling)
-
-# -----------------------------
-# DOWNLOAD CSV
-# -----------------------------
-st.download_button(
-    "Download Struktur Pasar CSV",
-    data=market_result.to_csv(index=False).encode("utf-8"),
-    file_name="simulasi_struktur_pasar.csv",
-    mime="text/csv",
-)
-
-# -----------------------------
-# JAWABAN RUMUSAN MASALAH
-# -----------------------------
-st.markdown("### 4.5 Jawaban Rumusan Masalah")
-
-st.write("""
-1. Perubahan harga dan teknologi memengaruhi pergeseran *resource* ke *reserve* karena kelayakan ekonomis berubah.
-2. Jalur ekstraksi yang efisien harus mengikuti logika *Hotelling*, yaitu harga bersih meningkat seiring waktu.
-3. *Green Paradox* muncul ketika kebijakan hijau memicu percepatan ekstraksi sebelum regulasi diberlakukan.
-4. Struktur pasar memengaruhi besar kecilnya *markup*, sehingga ikut menentukan penyimpangan dari efisiensi intertemporal.
-""")
-
-# -----------------------------
-# BAB V
-# -----------------------------
-st.subheader("BAB V. Kesimpulan dan Rekomendasi")
-
-st.markdown("### 5.1 Kesimpulan")
-st.write("""
-Harga emas menunjukkan tren meningkat, sementara *stock* emas terus mengalami penurunan. Fenomena ini
-menunjukkan tekanan kelangkaan pada sumber daya depletable. Analisis ini menegaskan relevansi
-*Hotelling Rule*, efisiensi dinamis, *green paradox*, dan pergeseran *resource* menjadi *reserve* dalam
-pengelolaan sumber daya alam modern.
-""")
-
-st.markdown("### 5.2 Rekomendasi / Kebijakan Solutif")
-st.write("""
-Pemerintah perlu mengatur tempo ekstraksi, memperkuat insentif teknologi hemat biaya, mendorong
-substitusi, dan merancang kebijakan lingkungan yang bertahap agar tidak memicu *race to extract*
-atau *Green Paradox*. Instrumen pasar dan pengawasan harus dirancang agar efisien sekaligus adil
-lintas generasi.
-""")
-
-st.divider()
-st.caption("Dikembangkan untuk PBL 3 - Ekonomi SDA & Lingkungan | Analisis Intertemporal Sumber Daya Emas")
