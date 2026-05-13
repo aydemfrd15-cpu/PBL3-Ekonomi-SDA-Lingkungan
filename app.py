@@ -505,11 +505,79 @@ st.info(
 # Parameter dasar
 # ============================================================
 st.subheader("📍 Parameter Dasar Analisis (T=0)")
+
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Harga Pasar", fmt_idr(p0))
-c2.metric("Biaya Marginal", fmt_idr(mc0))
-c3.metric("MUC Awal", fmt_idr(lambda0))
-c4.metric("Suku Bunga", f"{r:.2%}")
+
+# =========================================================
+# LOGIKA REAL TIME
+# =========================================================
+
+price_change = p0 - latest_price
+mc_gap = p0 - mc0
+muc_growth = lambda0 * r
+
+# =========================================================
+# HARGA PASAR
+# =========================================================
+with c1:
+
+    if price_change > 0:
+        status = "⬆ Naik"
+    elif price_change < 0:
+        status = "⬇ Turun"
+    else:
+        status = "Tetap"
+
+    st.metric(
+        "Harga Pasar",
+        fmt_idr(p0),
+        delta=f"{price_change:+.2f} ({status})"
+    )
+
+# =========================================================
+# MC
+# =========================================================
+with c2:
+
+    if mc_gap > 0:
+        mc_status = "Reserve"
+    else:
+        mc_status = "Resource"
+
+    st.metric(
+        "Biaya Marginal",
+        fmt_idr(mc0),
+        delta=mc_status
+    )
+
+# =========================================================
+# MUC
+# =========================================================
+with c3:
+
+    st.metric(
+        "MUC Awal",
+        fmt_idr(lambda0),
+        delta=f"Growth {muc_growth:.2f}"
+    )
+
+# =========================================================
+# SUKU BUNGA
+# =========================================================
+with c4:
+
+    if r >= 0.10:
+        r_status = "Ekstraksi Cepat"
+    elif r >= 0.05:
+        r_status = "Normal"
+    else:
+        r_status = "Lambat"
+
+    st.metric(
+        "Suku Bunga",
+        f"{r:.2%}",
+        delta=r_status
+    )
 
 # ============================================================
 # Simulations
