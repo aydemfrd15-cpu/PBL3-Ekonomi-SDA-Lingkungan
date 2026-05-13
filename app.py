@@ -5,10 +5,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
+# ============================================================
+# Page setup
+# ============================================================
 st.set_page_config(
     page_title="Analisis Intertemporal Sumber Daya Emas",
     page_icon="🟡",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 plt.style.use("dark_background")
@@ -18,6 +22,9 @@ plt.rcParams["axes.linewidth"] = 1.2
 plt.rcParams["font.size"] = 10
 
 
+# ============================================================
+# Helpers
+# ============================================================
 def fmt_idr(value: float) -> str:
     try:
         return f"Rp {value:,.2f}"
@@ -39,7 +46,31 @@ def safe_float(x, default=0.0):
         return default
 
 
+def make_line_figure(x, y, x_label, y_label, title=None):
+    fig, ax = plt.subplots()
+    ax.plot(x, y, marker="o")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    return fig
+
+
+def reserve_status(price: float, mc: float) -> str:
+    if price > mc:
+        return "Reserve makin layak"
+    if price < mc:
+        return "Masih resource"
+    return "Titik impas"
+
+
 def load_historical_data() -> pd.DataFrame:
+    """
+    Prioritas:
+    1. data_emas.csv kalau ada
+    2. fallback bawaan supaya app tetap jalan
+    """
     fallback = pd.DataFrame(
         {
             "Tahun": list(range(2014, 2025)),
@@ -56,18 +87,26 @@ def load_historical_data() -> pd.DataFrame:
                 1930.24,
                 2354.35,
             ],
+            "Produksi_Emas": [
+                2342, 2210, 2207, 1967, 1957,
+                1962, 1672, 1690, 1268, 1208, 1019
+            ],
+            "MC": [
+                728.5, 772.2, 620.3, 822.8, 1529.2,
+                1997.9, 1569.0, 2242.6, 2540.8, 2279.5, 3955.0
+            ],
             "Stock_Emas": [
-                805000.00,
-                804900.00,
-                804750.00,
-                804600.00,
-                804450.00,
-                804300.00,
-                804120.00,
-                803950.00,
-                803780.00,
-                803520.00,
-                803200.00,
+                805000.0,
+                804950.0,
+                804890.0,
+                804810.0,
+                804720.0,
+                804620.0,
+                804500.0,
+                804340.0,
+                804150.0,
+                803880.0,
+                803520.0,
             ],
         }
     )
@@ -82,6 +121,7 @@ def load_historical_data() -> pd.DataFrame:
         return fallback
 
     df.columns = [c.strip() for c in df.columns]
+
     rename_map = {}
     for col in df.columns:
         low = col.lower().strip()
@@ -91,32 +131,41 @@ def load_historical_data() -> pd.DataFrame:
             rename_map[col] = "Harga_Emas"
         elif low in {"stock_emas", "stok_emas", "stock emas", "stok emas", "stock"}:
             rename_map[col] = "Stock_Emas"
+        elif low in {"produksi_emas", "produksi emas", "produksi", "q"}:
+            rename_map[col] = "Produksi_Emas"
+        elif low in {"mc", "marginal cost", "marginal_cost"}:
+            rename_map[col] = "MC"
+
     df = df.rename(columns=rename_map)
 
-    required_cols = {"Tahun", "Harga_Emas", "Stock_Emas"}
-    if not required_cols.issubset(df.columns):
-        st.warning("data_emas.csv belum lengkap. Fallback data dipakai.")
+    if "Tahun" not in df.columns or "Harga_Emas" not in df.columns:
         return fallback
 
-    for col in ["Tahun", "Harga_Emas", "Stock_Emas"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+    for col in ["Tahun", "Harga_Emas", "Stock_Emas", "Produksi_Emas", "MC"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    df = df.dropna(subset=["Tahun", "Harga_Emas", "Stock_Emas"]).copy()
-    if df.empty:
-        return fallback
-
+    df = df.dropna(subset=["Tahun", "Harga_Emas"]).copy()
     df["Tahun"] = df["Tahun"].astype(int)
+
+    # Kalau stock belum ada, buat proxy sederhana supaya grafik tetap ada
+    if "Stock_Emas" not in df.columns:
+        start_stock = 805000.0
+        end_stock = 803500.0
+        if len(df) == 1:
+            df["Stock_Emas"] = [start_stock]
+        else:
+            df["Stock_Emas"] = [
+                start_stock + (end_stock - start_stock) * i / (len(df) - 1)
+                for i in range(len(df))
+            ]
+
+    if "Produksi_Emas" not in df.columns:
+        df["Produksi_Emas"] = pd.NA
+    if "MC" not in df.columns:
+        df["MC"] = pd.NA
+
     return df.sort_values("Tahun").reset_index(drop=True)
-
-
-def make_line_figure(x, y, x_label, y_label, title=None):
-    fig, ax = plt.subplots()
-    ax.plot(x, y, marker="o")
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    if title:
-        ax.set_title(title)
-    return fig
 
 
 def simulate_market(
@@ -126,12 +175,18 @@ def simulate_market(
     mc0: float,
     reserve0: float,
     periods: int,
-    n_firms: int = 4,
-    demand_growth: float = 0.0,
-    cost_growth: float = 0.0,
-    tech_improvement: float = 0.0,
-    depletion_penalty: float = 0.0,
+    n_firms: int,
+    demand_growth: float,
+    cost_growth: float,
+    tech_improvement: float,
+    depletion_penalty: float,
 ):
+    """
+    Simulasi dibuat agar:
+    - angka berubah saat slider berubah
+    - persaingan, monopoli, oligopoli punya rumus berbeda
+    - stok berkurang dari waktu ke waktu
+    """
     rows = []
     stock = max(reserve0, 1.0)
 
@@ -139,28 +194,36 @@ def simulate_market(
         depletion_ratio = 1.0 - (stock / reserve0 if reserve0 > 0 else 0.0)
         depletion_ratio = max(0.0, min(1.0, depletion_ratio))
 
-        a_t = a0 * ((1.0 + demand_growth) ** t) * (1.0 + 0.06 * depletion_ratio)
+        # Demand makin tinggi saat kelangkaan naik
+        a_t = a0 * ((1.0 + demand_growth) ** t) * (1.0 + 0.07 * depletion_ratio)
+
+        # Biaya naik, teknologi menahan kenaikan itu
         effective_cost_growth = max(cost_growth - tech_improvement, -0.95)
         mc_t = mc0 * ((1.0 + effective_cost_growth) ** t) * (1.0 + depletion_penalty * depletion_ratio)
 
+        # Rumus struktur pasar
         if structure == "Persaingan Sempurna":
+            # P = MC; Q = (a - MC)/b
             q_t = max((a_t - mc_t) / b0, 0.0)
             q_t = min(q_t, stock)
             p_t = max(mc_t, a_t - b0 * q_t)
 
         elif structure == "Monopoli":
+            # Q = (a - MC)/(2b); P = a - bQ
             q_t = max((a_t - mc_t) / (2.0 * b0), 0.0)
             q_t = min(q_t, stock)
             p_t = max(a_t - b0 * q_t, mc_t)
 
         elif structure == "Oligopoli":
+            # Cournot symmetric:
+            # Q = n(a-c)/(b(n+1))
             n = max(int(n_firms), 2)
             q_t = max((n * (a_t - mc_t)) / (b0 * (n + 1.0)), 0.0)
             q_t = min(q_t, stock)
             p_t = max(a_t - b0 * q_t, mc_t)
 
         else:
-            raise ValueError(f"Unknown structure: {structure}")
+            raise ValueError("Struktur pasar tidak dikenali")
 
         rows.append(
             {
@@ -196,16 +259,8 @@ def structure_summary(df: pd.DataFrame) -> pd.Series:
     )
 
 
-def reserve_status(price: float, mc: float) -> str:
-    if price > mc:
-        return "Reserve makin layak"
-    if price < mc:
-        return "Masih resource"
-    return "Titik impas"
-
-
 # ============================================================
-# Load data
+# Data
 # ============================================================
 data = load_historical_data()
 data["Perubahan_Harga_%"] = data["Harga_Emas"].pct_change() * 100
@@ -230,22 +285,30 @@ avg_price_growth = (
     if first_price
     else 0.0
 )
-total_stock_change = latest_stock - first_stock
 
+# Parameter dasar dari laporan tugas
 mc_default = 1732.53
 reserve_default = 805000.0
+a_default = float(data["Harga_Emas"].max())
+b_default = 0.788
 n_default = 4
 
 # ============================================================
-# Sidebar
+# Sidebar controls
 # ============================================================
-st.sidebar.title("Pengaturan Simulasi")
+st.sidebar.title("Kontrol Simulasi")
 st.sidebar.caption("Atur parameter supaya harga, output, dan stok benar-benar bergerak.")
+
+structure_mode = st.sidebar.radio(
+    "Struktur pasar yang ditampilkan",
+    ["Persaingan Sempurna", "Monopoli", "Oligopoli"],
+    index=0,
+)
 
 sim_periods = st.sidebar.slider("Horizon simulasi (periode)", 3, 20, 10, 1)
 reserve0 = st.sidebar.slider("Cadangan awal (kg)", 100000.0, 2000000.0, reserve_default, 1000.0)
-a0 = st.sidebar.slider("Intersep permintaan (a)", 1000.0, 6000.0, float(data["Harga_Emas"].max()), 1.0)
-b0 = st.sidebar.slider("Slope permintaan (b)", 0.100, 3.000, 0.788, 0.001)
+a0 = st.sidebar.slider("Intersep permintaan (a)", 1000.0, 6000.0, a_default, 1.0)
+b0 = st.sidebar.slider("Koefisien permintaan (b)", 0.100, 3.000, b_default, 0.001)
 mc0 = st.sidebar.slider("Biaya ekstraksi awal (MC)", 500.0, 5000.0, mc_default, 10.0)
 n_firms = st.sidebar.slider("Jumlah perusahaan oligopoli", 2, 20, n_default, 1)
 demand_growth = st.sidebar.slider("Pertumbuhan permintaan tahunan", 0.00, 0.20, 0.04, 0.005)
@@ -255,19 +318,19 @@ depletion_penalty = st.sidebar.slider("Tekanan kelangkaan terhadap biaya", 0.00,
 
 st.sidebar.divider()
 st.sidebar.caption(
-    "Catatan: di pasar persaingan, jumlah perusahaan tidak dipakai karena harga ditentukan pasar. "
-    "Parameter itu dipakai pada oligopoli."
+    "Catatan: pada persaingan sempurna harga mengikuti MC. "
+    "Pada monopoli output lebih kecil. Pada oligopoli, jumlah perusahaan memengaruhi hasil."
 )
 
 # ============================================================
-# COVER / HEADER
+# CSS / Header / Cover
 # ============================================================
 st.markdown(
     """
 <style>
 .cover-wrapper{
     margin-top: 5px;
-    margin-bottom: 40px;
+    margin-bottom: 34px;
     padding-left: 20px;
     padding-right: 20px;
 }
@@ -337,6 +400,11 @@ st.markdown(
 .logo-wrapper img{
     border-radius: 24px;
 }
+
+.small-note {
+    font-size: 0.92rem;
+    opacity: 0.82;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -400,7 +468,8 @@ with col2:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.info(
-    "Dashboard ini menampilkan data historis, perubahan stock, lalu simulasi harga sumber daya emas pada pasar persaingan, monopoli, dan oligopoli."
+    "Dashboard ini menggabungkan data historis, kondisi pasar awal, simulasi harga sumber daya, "
+    "serta mekanisme pasar persaingan, monopoli, dan oligopoli."
 )
 
 # ============================================================
@@ -415,7 +484,8 @@ k3.metric("Rata-rata Pertumbuhan Harga", f"{avg_price_growth:.2f}%")
 k4.metric("Status Pasar", reserve_status(latest_price, mc_default))
 
 st.write(
-    "Harga yang naik sementara stock menurun menunjukkan tekanan kelangkaan. Di titik ini, emas makin kuat diposisikan sebagai aset bernilai tinggi."
+    "Harga yang naik sementara stock menurun menunjukkan tekanan kelangkaan. "
+    "Di titik ini, emas makin kuat diposisikan sebagai aset bernilai tinggi."
 )
 
 # ============================================================
@@ -423,10 +493,16 @@ st.write(
 # ============================================================
 st.subheader("2. Data Historis")
 
-hist_left, hist_right = st.columns([1.2, 1])
+hist_left, hist_right = st.columns([1.25, 1])
 with hist_left:
+    cols_show = ["Tahun", "Harga_Emas", "Stock_Emas"]
+    if "Produksi_Emas" in data.columns:
+        cols_show.append("Produksi_Emas")
+    if "MC" in data.columns:
+        cols_show.append("MC")
+
     st.dataframe(
-        data[["Tahun", "Harga_Emas", "Stock_Emas"]],
+        data[cols_show],
         use_container_width=True,
         height=380,
     )
@@ -441,9 +517,10 @@ with hist_right:
         f"- Stock awal: **{fmt_num(first_stock, 3)}**\n"
         f"- Stock akhir: **{fmt_num(latest_stock, 3)}**"
     )
+
     st.download_button(
         "Download Data Historis CSV",
-        data=data[["Tahun", "Harga_Emas", "Stock_Emas"]].to_csv(index=False).encode("utf-8"),
+        data=data[cols_show].to_csv(index=False).encode("utf-8"),
         file_name="data_historis_emas.csv",
         mime="text/csv",
     )
@@ -456,7 +533,8 @@ fig1 = make_line_figure(data["Tahun"], data["Harga_Emas"], "Tahun", "Harga Emas"
 st.pyplot(fig1, use_container_width=True)
 
 st.write(
-    "Grafik harga memperlihatkan arah perubahan harga emas dari waktu ke waktu. Naiknya harga biasanya sejalan dengan kelangkaan, ekspektasi pasar, dan biaya ekstraksi yang meningkat."
+    "Grafik harga memperlihatkan arah perubahan harga emas dari waktu ke waktu. "
+    "Naiknya harga biasanya sejalan dengan kelangkaan, ekspektasi pasar, dan biaya ekstraksi yang meningkat."
 )
 
 # ============================================================
@@ -467,11 +545,12 @@ fig2 = make_line_figure(data["Tahun"], data["Stock_Emas"], "Tahun", "Stock Emas"
 st.pyplot(fig2, use_container_width=True)
 
 st.write(
-    "Perubahan stock menampilkan cadangan yang makin menipis. Di ekonomi sumber daya alam, ini menegaskan sifat emas sebagai depletable resource."
+    "Perubahan stock menampilkan cadangan yang makin menipis. "
+    "Dalam ekonomi sumber daya alam, ini menegaskan sifat emas sebagai depletable resource."
 )
 
 # ============================================================
-# 5. Tabel perhitungan perubahan stock emas
+# 5. Tabel perubahan stock
 # ============================================================
 st.subheader("5. Tabel Perhitungan Perubahan Stock Emas")
 stock_change_table = data[["Tahun", "Stock_Emas", "Perubahan_Stock", "Perubahan_Stock_%"]].copy()
@@ -485,10 +564,9 @@ st.caption("Perubahan negatif berarti stock berkurang dari periode sebelumnya.")
 st.subheader("6. Alat Simulasi Harga Sumber Daya")
 
 st.write(
-    "Simulasi di bawah ini dibuat supaya angka di tabel dan grafik benar-benar bergerak ketika parameter pasar diubah. Tiga mekanisme pasar dipisahkan: persaingan, monopoli, dan oligopoli."
+    "Simulasi di bawah ini dibuat supaya angka di tabel dan grafik benar-benar bergerak ketika parameter pasar diubah. "
+    "Tiga mekanisme pasar dipisahkan: persaingan, monopoli, dan oligopoli."
 )
-
-sim_tabs = st.tabs(["Persaingan Sempurna", "Monopoli", "Oligopoli", "Perbandingan"])
 
 sim_comp = simulate_market(
     "Persaingan Sempurna",
@@ -532,6 +610,7 @@ sim_oligo = simulate_market(
     depletion_penalty=depletion_penalty,
 )
 
+sim_tabs = st.tabs(["Persaingan", "Monopoli", "Oligopoli", "Perbandingan"])
 
 def render_simulation(df: pd.DataFrame, title: str, note: str):
     c1, c2, c3 = st.columns(3)
@@ -553,10 +632,11 @@ def render_simulation(df: pd.DataFrame, title: str, note: str):
                     "Harga",
                     "Stock_Tersisa",
                     "Pendapatan",
+                    "Rasio_Deplesi",
                 ]
             ],
             use_container_width=True,
-            height=380,
+            height=390,
         )
 
     with right:
@@ -565,6 +645,7 @@ def render_simulation(df: pd.DataFrame, title: str, note: str):
         ax_p.set_xlabel("Periode")
         ax_p.set_ylabel("Harga")
         ax_p.set_title(f"Jalur Harga — {title}")
+        fig_p.tight_layout()
         st.pyplot(fig_p, use_container_width=True)
 
         fig_s, ax_s = plt.subplots()
@@ -572,13 +653,20 @@ def render_simulation(df: pd.DataFrame, title: str, note: str):
         ax_s.set_xlabel("Periode")
         ax_s.set_ylabel("Stock Tersisa")
         ax_s.set_title(f"Jalur Stock — {title}")
+        fig_s.tight_layout()
         st.pyplot(fig_s, use_container_width=True)
-
 
 with sim_tabs[0]:
     st.markdown("### Mekanisme Pasar Persaingan")
     st.write(
-        "Dalam persaingan sempurna, perusahaan adalah price taker. Harga cenderung mengikuti biaya marjinal, dan output menyesuaikan sampai pasar mencapai keseimbangan."
+        "Dalam persaingan sempurna, perusahaan adalah price taker. Harga cenderung mengikuti biaya marjinal, "
+        "dan output menyesuaikan sampai pasar mencapai keseimbangan."
+    )
+    st.markdown(
+        """
+        **Logika mikroekonomi:**  
+        \( P = MC \) sehingga output bergerak mengikuti titik pertemuan permintaan dan biaya marjinal.
+        """
     )
     render_simulation(
         sim_comp,
@@ -589,7 +677,14 @@ with sim_tabs[0]:
 with sim_tabs[1]:
     st.markdown("### Mekanisme Pasar Monopoli")
     st.write(
-        "Dalam monopoli, satu produsen menguasai pasar. Output cenderung lebih kecil dibanding persaingan, sedangkan harga lebih tinggi karena produsen punya kekuatan pasar."
+        "Dalam monopoli, satu produsen menguasai pasar. Output cenderung lebih kecil dibanding persaingan, "
+        "sedangkan harga lebih tinggi karena produsen punya kekuatan pasar."
+    )
+    st.markdown(
+        """
+        **Logika mikroekonomi:**  
+        \( MR = MC \), lalu \( P = a - bQ \). Karena kurva permintaan turun, monopoli memproduksi lebih sedikit dan menjual lebih mahal.
+        """
     )
     render_simulation(
         sim_mono,
@@ -600,7 +695,15 @@ with sim_tabs[1]:
 with sim_tabs[2]:
     st.markdown("### Mekanisme Pasar Oligopoli")
     st.write(
-        "Dalam oligopoli, beberapa perusahaan saling bereaksi satu sama lain. Semakin banyak perusahaan, hasilnya makin mendekati persaingan sempurna."
+        "Dalam oligopoli, beberapa perusahaan saling bereaksi satu sama lain. Semakin banyak perusahaan, "
+        "hasilnya makin mendekati persaingan sempurna."
+    )
+    st.markdown(
+        """
+        **Logika mikroekonomi:**  
+        Model Cournot dipakai agar jumlah perusahaan benar-benar memengaruhi output.  
+        Makin banyak perusahaan, output total naik dan harga turun.
+        """
     )
     render_simulation(
         sim_oligo,
@@ -618,8 +721,10 @@ with sim_tabs[3]:
         }
     )
     st.dataframe(summary_df, use_container_width=True)
+
     st.write(
-        "Secara mikroekonomi, urutannya biasanya: harga persaingan paling rendah, monopoli paling tinggi, dan oligopoli berada di tengah."
+        "Secara mikroekonomi, urutannya biasanya: harga persaingan paling rendah, monopoli paling tinggi, "
+        "dan oligopoli berada di tengah."
     )
 
 st.success(
