@@ -478,7 +478,7 @@ with col2:
         <h3>Kelompok 4</h3>
         <p>
         <b>Salsa Zahratul Aulia</b> (10090224004)<br>
-        <b>Aida Frida Kultsum</b> (10090224014)<br>
+        <b>Aida Farida Kultsum</b> (10090224014)<br>
         <b>Nabil Athala Naufal</b> (10090224022)
         </p>
         <hr>
