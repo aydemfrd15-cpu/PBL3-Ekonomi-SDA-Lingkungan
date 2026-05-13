@@ -399,25 +399,23 @@ with col2:
 
     st.markdown(
         """
-       st.markdown(
-    """
-    <div style="
-        font-size:28px;
-        font-weight:700;
-        color:#F4C542;
-        margin-top:-8px;
-        margin-bottom:10px;
-        letter-spacing:0.5px;
-    ">
-        PT Aneka Tambang Tbk (ANTAM)
-    </div>
+        <div style="
+            font-size:28px;
+            font-weight:700;
+            color:#F4C542;
+            margin-top:-8px;
+            margin-bottom:10px;
+            letter-spacing:0.5px;
+        ">
+            PT Aneka Tambang Tbk (ANTAM)
+        </div>
 
-    <div class="subtitle-text">
-    PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+        <div class="subtitle-text">
+            PBL 3 — Ekonomi Sumber Daya Alam dan Lingkungan
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown(
         """
